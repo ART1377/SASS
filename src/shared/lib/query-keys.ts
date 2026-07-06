@@ -1,0 +1,30 @@
+export const queryKeys = {
+  users: {
+    all: ['users'] as const,
+    byId: (id: string) => ['users', id] as const,
+    profile: ['users', 'profile'] as const,
+  },
+  projects: {
+    all: ['projects'] as const,
+    byId: (id: string) => ['projects', id] as const,
+    members: (projectId: string) => ['projects', projectId, 'members'] as const,
+  },
+  tasks: {
+    all: ['tasks'] as const,
+    byId: (id: string) => ['tasks', id] as const,
+    byProject: (projectId: string) => ['tasks', 'project', projectId] as const,
+    comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
+  },
+  chat: {
+    rooms: (projectId: string) => ['chat', 'rooms', projectId] as const,
+    messages: (roomId: string) => ['chat', 'messages', roomId] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    unread: ['notifications', 'unread'] as const,
+  },
+  dashboard: {
+    stats: ['dashboard', 'stats'] as const,
+    activity: ['dashboard', 'activity'] as const,
+  },
+} as const;
