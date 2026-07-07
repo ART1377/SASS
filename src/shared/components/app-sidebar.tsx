@@ -137,7 +137,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
         <div className="flex items-center gap-3 rounded-xl bg-sidebar-accent/50 p-3 mb-3 transition-all duration-200 hover:bg-sidebar-accent/70">
           <Avatar className="h-9 w-9 ring-2 ring-primary/20 transition-all duration-300 hover:ring-primary/40 hover:scale-105">
-            <AvatarImage src={user?.image || undefined} alt={user?.name || ''} />
+            {/* <AvatarImage src={user?.image || undefined} alt={user?.name || ''} /> */}
             <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
               {getInitials(user?.name || 'کاربر')}
             </AvatarFallback>
