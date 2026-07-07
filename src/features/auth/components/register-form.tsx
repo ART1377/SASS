@@ -1,5 +1,9 @@
 'use client';
 
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuth } from '../hooks/use-auth';
+import { registerSchema, type RegisterFormData } from '../validations';
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -10,13 +14,10 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-import { ROUTES } from '@/shared/lib/routes';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, UserPlus } from 'lucide-react';
+import { PasswordInput } from '@/shared/components/ui/password-input';
+import { Loader2, UserPlus, Mail, User } from 'lucide-react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '../hooks/use-auth';
-import { registerSchema, type RegisterFormData } from '../validations';
+import { ROUTES } from '@/shared/lib/routes';
 
 export function RegisterForm() {
   const { register: registerUser, isRegistering } = useAuth();
@@ -37,15 +38,23 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>نام کامل</FormLabel>
+              <FormLabel className="text-sm font-medium">نام کامل</FormLabel>
               <FormControl>
-                <Input placeholder="علی محمدی" disabled={isRegistering} {...field} />
+                <div className="relative">
+                  <Input
+                    placeholder="علی محمدی"
+                    disabled={isRegistering}
+                    className="pr-10"
+                    {...field}
+                  />
+                  <User className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -57,14 +66,18 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ایمیل</FormLabel>
+              <FormLabel className="text-sm font-medium">ایمیل</FormLabel>
               <FormControl>
-                <Input
-                  type="email"
-                  placeholder="example@email.com"
-                  disabled={isRegistering}
-                  {...field}
-                />
+                <div className="relative">
+                  <Input
+                    type="email"
+                    placeholder="example@email.com"
+                    disabled={isRegistering}
+                    className="pr-10"
+                    {...field}
+                  />
+                  <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -76,9 +89,9 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>رمز عبور</FormLabel>
+              <FormLabel className="text-sm font-medium">رمز عبور</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" disabled={isRegistering} {...field} />
+                <PasswordInput placeholder="••••••••" disabled={isRegistering} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -90,16 +103,20 @@ export function RegisterForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>تکرار رمز عبور</FormLabel>
+              <FormLabel className="text-sm font-medium">تکرار رمز عبور</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" disabled={isRegistering} {...field} />
+                <PasswordInput placeholder="••••••••" disabled={isRegistering} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isRegistering}>
+        <Button
+          type="submit"
+          className="w-full h-11 rounded-xl bg-primary/90 hover:bg-primary transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
+          disabled={isRegistering}
+        >
           {isRegistering ? (
             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           ) : (
@@ -108,9 +125,12 @@ export function RegisterForm() {
           ثبت‌نام
         </Button>
 
-        <p className="text-muted-foreground text-center text-sm">
+        <p className="text-center text-sm text-muted-foreground">
           قبلاً ثبت‌نام کرده‌اید؟{' '}
-          <Link href={ROUTES.LOGIN} className="text-primary hover:underline">
+          <Link
+            href={ROUTES.LOGIN}
+            className="text-primary hover:underline font-medium transition-colors"
+          >
             وارد شوید
           </Link>
         </p>

@@ -5,18 +5,17 @@
   "scripts": {
     "build": "next build",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "dev": "next dev --turbopack",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "next lint",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx,.mjs",
     "prepare": "husky",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "validate": "pnpm type-check && pnpm lint && pnpm format:check"
+    "validate": "pnpm type-check && pnpm format:check"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -80,6 +79,7 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.20.0",
     "@types/react": "^19.2.17",

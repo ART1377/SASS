@@ -1,9 +1,9 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
+import { prisma } from '@/shared/lib/prisma';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { compare } from 'bcryptjs';
-import { prisma } from '@/shared/lib/prisma';
 import type { NextAuthConfig } from 'next-auth';
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma) as NextAuthConfig['adapter'],
@@ -36,10 +36,7 @@ export const authConfig: NextAuthConfig = {
           throw new Error('کاربری با این ایمیل یافت نشد');
         }
 
-        const isPasswordValid = await compare(
-          credentials.password as string,
-          user.password
-        );
+        const isPasswordValid = await compare(credentials.password as string, user.password);
 
         if (!isPasswordValid) {
           throw new Error('رمز عبور اشتباه است');

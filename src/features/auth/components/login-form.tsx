@@ -1,5 +1,9 @@
 'use client';
 
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuth } from '../hooks/use-auth';
+import { loginSchema, type LoginFormData } from '../validations';
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -10,13 +14,10 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-import { ROUTES } from '@/shared/lib/routes';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, LogIn } from 'lucide-react';
+import { PasswordInput } from '@/shared/components/ui/password-input';
+import { Loader2, LogIn, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '../hooks/use-auth';
-import { loginSchema, type LoginFormData } from '../validations';
+import { ROUTES } from '@/shared/lib/routes';
 
 export function LoginForm() {
   const { login, isLoggingIn } = useAuth();
@@ -35,20 +36,24 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>ایمیل</FormLabel>
+              <FormLabel className="text-sm font-medium">ایمیل</FormLabel>
               <FormControl>
-                <Input
-                  type="email"
-                  placeholder="example@email.com"
-                  disabled={isLoggingIn}
-                  {...field}
-                />
+                <div className="relative">
+                  <Input
+                    type="email"
+                    placeholder="example@email.com"
+                    disabled={isLoggingIn}
+                    className="pr-10"
+                    {...field}
+                  />
+                  <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -60,16 +65,20 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>رمز عبور</FormLabel>
+              <FormLabel className="text-sm font-medium">رمز عبور</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" disabled={isLoggingIn} {...field} />
+                <PasswordInput placeholder="••••••••" disabled={isLoggingIn} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isLoggingIn}>
+        <Button
+          type="submit"
+          className="w-full h-11 rounded-xl bg-primary/90 hover:bg-primary transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
+          disabled={isLoggingIn}
+        >
           {isLoggingIn ? (
             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
           ) : (
@@ -78,9 +87,12 @@ export function LoginForm() {
           ورود
         </Button>
 
-        <p className="text-muted-foreground text-center text-sm">
+        <p className="text-center text-sm text-muted-foreground">
           حساب کاربری ندارید؟{' '}
-          <Link href={ROUTES.REGISTER} className="text-primary hover:underline">
+          <Link
+            href={ROUTES.REGISTER}
+            className="text-primary hover:underline font-medium transition-colors"
+          >
             ثبت‌نام کنید
           </Link>
         </p>
