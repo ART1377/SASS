@@ -1,4 +1,4 @@
-import type { UserRole } from '@prisma/client';
+export type UserRole = 'ADMIN' | 'MANAGER' | 'MEMBER';
 
 export interface LoginInput {
   email: string;
