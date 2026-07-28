@@ -1,11 +1,11 @@
-import { PageHeader } from '@/shared/components/page-header';
-import { PageWrapper } from '@/shared/components/page-wrapper';
+import Chat from '@/features/chat';
+import { LoadingSkeleton } from '@/shared/components/loading-skeleton';
+import { Suspense } from 'react';
 
 export default function ChatPage() {
   return (
-    <PageWrapper>
-      <PageHeader title="چت" description="ارتباط با اعضای تیم" />
-      <div className="text-muted-foreground py-12 text-center">پیام‌رسان به زودی...</div>
-    </PageWrapper>
+    <Suspense fallback={<LoadingSkeleton type="list" count={5} />}>
+      <Chat />
+    </Suspense>
   );
 }

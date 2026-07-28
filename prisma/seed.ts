@@ -5,12 +5,12 @@ const prisma = new PrismaClient();
 
 async function main() {
   // Create admin user
-  const adminPassword = await hash('Admin123!', 12);
+  const adminPassword = await hash('Admin123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@taskmanager.com' },
+    where: { email: 'admin@gmail.com' },
     update: {},
     create: {
-      email: 'admin@taskmanager.com',
+      email: 'admin@gmail.com',
       name: 'مدیر سیستم',
       password: adminPassword,
       role: 'ADMIN',
@@ -18,12 +18,12 @@ async function main() {
   });
 
   // Create manager user
-  const managerPassword = await hash('Manager123!', 12);
+  const managerPassword = await hash('Manager123', 12);
   const manager = await prisma.user.upsert({
-    where: { email: 'manager@taskmanager.com' },
+    where: { email: 'manager@gmail.com' },
     update: {},
     create: {
-      email: 'manager@taskmanager.com',
+      email: 'manager@gmail.com',
       name: 'مدیر پروژه',
       password: managerPassword,
       role: 'MANAGER',
@@ -31,12 +31,12 @@ async function main() {
   });
 
   // Create member user
-  const memberPassword = await hash('Member123!', 12);
+  const memberPassword = await hash('Member123', 12);
   const member = await prisma.user.upsert({
-    where: { email: 'member@taskmanager.com' },
+    where: { email: 'member@gmail.com' },
     update: {},
     create: {
-      email: 'member@taskmanager.com',
+      email: 'member@gmail.com',
       name: 'عضو تیم',
       password: memberPassword,
       role: 'MEMBER',
@@ -46,9 +46,9 @@ async function main() {
   console.log({ admin, manager, member });
   console.log('Seed data created successfully!');
   console.log('\nTest Accounts:');
-  console.log('Admin: admin@taskmanager.com / Admin123!');
-  console.log('Manager: manager@taskmanager.com / Manager123!');
-  console.log('Member: member@taskmanager.com / Member123!');
+  console.log('Admin: admin@gmail.com / Admin123');
+  console.log('Manager: manager@gmail.com / Manager123');
+  console.log('Member: member@gmail.com / Member123');
 }
 
 main()

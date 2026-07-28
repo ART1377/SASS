@@ -1,22 +1,16 @@
 import { queryKeys } from '@/shared/lib/query-keys';
 import { ROUTES } from '@/shared/lib/routes';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { authApi } from '../api/auth-api';
-import type { LoginInput } from '../types';
+import type { LoginInput, RegisterInput } from '../types';
 
 export function useAuth() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: queryKeys.users.profile,
-    queryFn: authApi.getProfile,
-    enabled: status === 'authenticated',
-  });
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
@@ -42,13 +36,17 @@ export function useAuth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: authApi.register,
-    onSuccess: async (data) => {
+    mutationFn: async (data: RegisterInput) => {
+      const result = await authApi.register(data);
+      // Auto login after registration
       await signIn('credentials', {
-        email: data.user.email,
-        password: '', // This will be handled by the session
+        email: data.email,
+        password: data.password,
         redirect: false,
       });
+      return result;
+    },
+    onSuccess: () => {
       toast.success('ثبت‌نام با موفقیت انجام شد');
       router.push(ROUTES.DASHBOARD);
     },
@@ -69,8 +67,8 @@ export function useAuth() {
   });
 
   return {
-    user: profile ?? session?.user,
-    isLoading: status === 'loading' || isProfileLoading,
+    user: session?.user,
+    isLoading: status === 'loading',
     isAuthenticated: status === 'authenticated',
     login: loginMutation.mutate,
     isLoggingIn: loginMutation.isPending,

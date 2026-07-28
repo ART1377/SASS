@@ -4,13 +4,16 @@ import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { LoadingSkeleton } from '@/shared/components/loading-skeleton';
 import { FolderKanban } from 'lucide-react';
+import { useState } from 'react';
 import { useProjects } from '../hooks/use-projects';
 import type { Project } from '../types';
 import { CreateProjectDialog } from './create-project-dialog';
+import { EditProjectDialog } from './edit-project-dialog';
 import { ProjectCard } from './project-card';
 
 export function ProjectsList() {
   const { projects, isLoading, isError, deleteProject } = useProjects();
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   if (isLoading) {
     return <LoadingSkeleton type="card" count={6} />;
@@ -32,15 +35,28 @@ export function ProjectsList() {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project: Project) => (
-        <ProjectCard
-          key={project.id}
-          project={project}
-          onEdit={() => {}}
-          onDelete={() => deleteProject(project.id)}
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project: Project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            onEdit={setEditingProject}
+            onDelete={() => deleteProject(project.id)}
+          />
+        ))}
+      </div>
+
+      {/* Edit Dialog */}
+      {editingProject && (
+        <EditProjectDialog
+          project={editingProject}
+          open={!!editingProject}
+          onOpenChange={(open) => {
+            if (!open) setEditingProject(null);
+          }}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 }

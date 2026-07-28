@@ -1,24 +1,65 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui/card';
+import { Skeleton } from '@/shared/components/ui/skeleton';
 import ReactECharts from 'echarts-for-react';
 import { useTheme } from 'next-themes';
+import type { DashboardStats } from '../types';
 
-export function ProjectsChart() {
+interface ProjectsChartProps {
+  projectStats?: DashboardStats['projectStats'];
+  isLoading: boolean;
+}
+
+export function ProjectsChart({ projectStats, isLoading }: ProjectsChartProps) {
   const { theme } = useTheme();
   const isDark = theme?.includes('dark');
+
+  if (isLoading) {
+    return (
+      <Card className="card-hover border-0 shadow-lg">
+        <CardHeader>
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-3 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-75 w-full rounded-xl" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!projectStats || projectStats.length === 0) {
+    return (
+      <Card className="card-hover border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-lg">آمار پروژه‌ها</CardTitle>
+          <CardDescription>داده‌ای برای نمایش وجود ندارد</CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground flex h-75 items-center justify-center">
+          پس از ایجاد پروژه و تسک، نمودار اینجا نمایش داده می‌شود
+        </CardContent>
+      </Card>
+    );
+  }
 
   const option = {
     tooltip: {
       trigger: 'axis',
-      axisPointer: {
-        type: 'shadow',
-      },
+      axisPointer: { type: 'shadow' },
+      textStyle: { fontFamily: 'Vazirmatn' },
     },
     legend: {
       bottom: 0,
       textStyle: {
         color: isDark ? '#9ca3af' : '#6b7280',
+        fontFamily: 'Vazirmatn',
       },
     },
     grid: {
@@ -30,68 +71,49 @@ export function ProjectsChart() {
     },
     xAxis: {
       type: 'category',
-      data: ['پروژه آلفا', 'پروژه بتا', 'پروژه گاما', 'پروژه دلتا'],
+      data: projectStats.map((p) => p.name),
       axisLabel: {
         color: isDark ? '#9ca3af' : '#6b7280',
+        fontFamily: 'Vazirmatn',
+        fontSize: 11,
       },
       axisLine: {
-        lineStyle: {
-          color: isDark ? '#374151' : '#e5e7eb',
-        },
+        lineStyle: { color: isDark ? '#374151' : '#e5e7eb' },
       },
     },
     yAxis: {
       type: 'value',
       axisLabel: {
         color: isDark ? '#9ca3af' : '#6b7280',
+        fontFamily: 'Vazirmatn',
       },
       splitLine: {
-        lineStyle: {
-          color: isDark ? '#374151' : '#f3f4f6',
-        },
+        lineStyle: { color: isDark ? '#374151' : '#f3f4f6' },
       },
     },
     series: [
       {
-        name: 'تسک‌های تکمیل شده',
+        name: 'تکمیل شده',
         type: 'bar',
-        data: [23, 45, 18, 32],
+        data: projectStats.map((p) => p.completed),
         itemStyle: {
           borderRadius: [8, 8, 0, 0],
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: isDark ? '#818cf8' : '#6366f1' },
-              { offset: 1, color: isDark ? '#6366f1' : '#818cf8' },
-            ],
-          },
+          color: isDark ? '#6ee7b7' : '#10b981',
         },
         emphasis: {
-          itemStyle: {
-            color: isDark ? '#a5b4fc' : '#4f46e5',
-          },
+          itemStyle: { color: isDark ? '#a7f3d0' : '#059669' },
         },
       },
       {
-        name: 'تسک‌های در حال انجام',
+        name: 'در حال انجام',
         type: 'bar',
-        data: [12, 8, 15, 10],
+        data: projectStats.map((p) => p.inProgress),
         itemStyle: {
           borderRadius: [8, 8, 0, 0],
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              { offset: 0, color: isDark ? '#6ee7b7' : '#10b981' },
-              { offset: 1, color: isDark ? '#34d399' : '#059669' },
-            ],
-          },
+          color: isDark ? '#818cf8' : '#6366f1',
         },
         emphasis: {
-          itemStyle: {
-            color: isDark ? '#a7f3d0' : '#047857',
-          },
+          itemStyle: { color: isDark ? '#a5b4fc' : '#4f46e5' },
         },
       },
     ],
@@ -101,7 +123,7 @@ export function ProjectsChart() {
     <Card className="card-hover border-0 shadow-lg">
       <CardHeader>
         <CardTitle className="text-lg">آمار پروژه‌ها</CardTitle>
-        <CardDescription>وضعیت تسک‌ها در هر پروژه</CardDescription>
+        <CardDescription>تسک‌های تکمیل شده و در حال انجام</CardDescription>
       </CardHeader>
       <CardContent>
         <ReactECharts option={option} style={{ height: '300px' }} />

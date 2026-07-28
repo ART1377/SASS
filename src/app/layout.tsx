@@ -1,11 +1,12 @@
+import { ToastConfig } from '@/shared/components/toast-config';
 import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { AuthProvider } from '@/shared/providers/auth-provider';
 import { QueryProvider } from '@/shared/providers/query-provider';
 import { ThemeProvider } from '@/shared/providers/theme-provider';
 import type { Metadata } from 'next';
 import { Vazirmatn } from 'next/font/google';
-import { Toaster } from 'react-hot-toast';
 import './globals.css';
+import { SocketProvider } from '@/shared/providers/socket-provider';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],
@@ -14,10 +15,20 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: 'Task Manager SaaS',
-  description: 'Modern task management application',
+  title: {
+    default: 'Task Manager SaaS',
+    template: '%s | Task Manager',
+  },
+  description: 'Modern task management application for teams',
+  keywords: ['task management', 'project management', 'kanban', 'team collaboration'],
+  authors: [{ name: 'Your Name' }],
+  openGraph: {
+    title: 'Task Manager SaaS',
+    description: 'Modern task management application',
+    type: 'website',
+    locale: 'fa_IR',
+  },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,17 +40,10 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <QueryProvider>
             <AuthProvider>
-              <TooltipProvider>{children}</TooltipProvider>
-              <Toaster
-                position="top-center"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: 'var(--toast-bg)',
-                    color: 'var(--toast-color)',
-                  },
-                }}
-              />
+              <TooltipProvider>
+                <SocketProvider>{children}</SocketProvider>
+              </TooltipProvider>
+              <ToastConfig />
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

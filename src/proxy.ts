@@ -11,6 +11,14 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuth = !!token;
 
+  // Root path - redirect to dashboard if authenticated, login if not
+  if (pathname === '/') {
+    if (isAuth) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   // Auth pages - redirect to dashboard if already authenticated
   if (isAuth && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
     return NextResponse.redirect(new URL('/dashboard', request.url));

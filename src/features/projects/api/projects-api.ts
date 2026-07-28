@@ -25,4 +25,9 @@ export const projectsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/projects/${id}`);
   },
+
+  inviteMember: async (projectId: string, email: string) => {
+    const response = await apiClient.post(`/projects/${projectId}/members`, { email });
+    return response.data;
+  },
 };

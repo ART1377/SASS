@@ -46,6 +46,19 @@ export function useProjects() {
     },
   });
 
+  const inviteMemberMutation = useMutation({
+    mutationFn: ({ projectId, email }: { projectId: string; email: string }) =>
+      projectsApi.inviteMember(projectId, email),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(variables.projectId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      toast.success('عضو با موفقیت دعوت شد');
+    },
+    onError: (error: { response?: { data?: { error?: string } } }) => {
+      toast.error(error?.response?.data?.error || 'خطا در دعوت عضو');
+    },
+  });
+
   return {
     projects: projectsQuery.data ?? [],
     isLoading: projectsQuery.isLoading,
@@ -57,5 +70,7 @@ export function useProjects() {
     isUpdating: updateProjectMutation.isPending,
     deleteProject: deleteProjectMutation.mutate,
     isDeleting: deleteProjectMutation.isPending,
+    inviteMember: inviteMemberMutation.mutate,
+    isInviting: inviteMemberMutation.isPending,
   };
 }

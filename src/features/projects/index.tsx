@@ -11,7 +11,6 @@ export default function Projects() {
         description="مدیریت و پیگیری پروژه‌های تیم"
         actions={<CreateProjectDialog />}
       />
-
       <ProjectsList />
     </PageWrapper>
   );

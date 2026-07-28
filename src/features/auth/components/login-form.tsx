@@ -1,9 +1,5 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuth } from '../hooks/use-auth';
-import { loginSchema, type LoginFormData } from '../validations';
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -15,9 +11,13 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { PasswordInput } from '@/shared/components/ui/password-input';
+import { ROUTES } from '@/shared/lib/routes';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, LogIn, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { ROUTES } from '@/shared/lib/routes';
+import { useForm } from 'react-hook-form';
+import { useAuth } from '../hooks/use-auth';
+import { loginSchema, type LoginFormData } from '../validations';
 
 export function LoginForm() {
   const { login, isLoggingIn } = useAuth();
@@ -37,63 +37,80 @@ export function LoginForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium">ایمیل</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    type="email"
-                    placeholder="example@email.com"
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm font-medium">ایمیل</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type="email"
+                      placeholder="example@email.com"
+                      disabled={isLoggingIn}
+                      className="bg-muted/50 focus:bg-background h-11 rounded-xl border-transparent pr-10 transition-all"
+                      {...field}
+                    />
+                    <Mail className="text-muted-foreground/60 absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between">
+                  <FormLabel className="text-sm font-medium">رمز عبور</FormLabel>
+                  <Link
+                    href="#"
+                    className="text-muted-foreground hover:text-primary text-xs transition-colors"
+                  >
+                    فراموشی رمز؟
+                  </Link>
+                </div>
+                <FormControl>
+                  <PasswordInput
+                    placeholder="••••••••"
                     disabled={isLoggingIn}
-                    className="pr-10"
+                    className="bg-muted/50 focus:bg-background h-11 border-transparent transition-all"
                     {...field}
                   />
-                  <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-sm font-medium">رمز عبور</FormLabel>
-              <FormControl>
-                <PasswordInput placeholder="••••••••" disabled={isLoggingIn} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button
           type="submit"
-          className="w-full h-11 rounded-xl bg-primary/90 hover:bg-primary transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
+          className="shadow-primary/20 hover:shadow-primary/30 h-11 w-full rounded-xl font-medium shadow-lg transition-all duration-300 hover:shadow-xl"
           disabled={isLoggingIn}
         >
           {isLoggingIn ? (
-            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <LogIn className="ml-2 h-4 w-4" />
+            <>
+              <LogIn className="ml-2 h-4 w-4" />
+              ورود به حساب
+            </>
           )}
-          ورود
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-center text-sm">
           حساب کاربری ندارید؟{' '}
           <Link
             href={ROUTES.REGISTER}
-            className="text-primary hover:underline font-medium transition-colors"
+            className="text-primary font-medium underline-offset-4 transition-all hover:underline"
           >
-            ثبت‌نام کنید
+            ساخت حساب جدید
           </Link>
         </p>
       </form>
