@@ -2,6 +2,7 @@
 
 import { Button } from '@/shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
 import { useState } from 'react';
 import { useNotifications } from '../hooks/use-notifications';
@@ -16,13 +17,27 @@ export function NotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="bg-destructive text-destructive-foreground animate-in zoom-in absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-sm">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
+        <Button variant="ghost" size="icon" className="relative" aria-label="اعلان‌ها">
+          <Bell className="h-5 w-5" aria-hidden="true" />
+          <AnimatePresence mode="wait">
+            {unreadCount > 0 && (
+              <motion.span
+                key={unreadCount}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                className="bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-sm"
+              >
+                <motion.span
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ repeat: 2, duration: 0.5, delay: 0.3 }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </motion.span>
+              </motion.span>
+            )}
+          </AnimatePresence>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
@@ -37,7 +52,7 @@ export function NotificationBell() {
         <div className="max-h-80 overflow-y-auto">
           {recentNotifications.length === 0 ? (
             <div className="p-8 text-center">
-              <Bell className="text-muted-foreground/30 mx-auto h-8 w-8" />
+              <Bell className="text-muted-foreground/30 mx-auto h-8 w-8" aria-hidden="true" />
               <p className="text-muted-foreground mt-2 text-sm">اعلانی وجود ندارد</p>
             </div>
           ) : (

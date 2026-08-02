@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/shared/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { Task } from '../types';
 import { TaskCard } from './task-card';
 
@@ -29,6 +30,8 @@ export function KanbanColumn({
 
   return (
     <div
+      role="region"
+      aria-label={column.title}
       className={cn(
         'bg-muted/30 flex flex-col rounded-2xl border-2 border-dashed border-transparent p-3 transition-all duration-300',
         isTarget && 'border-primary/30 bg-primary/5'
@@ -45,17 +48,33 @@ export function KanbanColumn({
         </span>
       </div>
 
-      {/* Tasks */}
+      {/* Tasks with Animation */}
       <div className="flex min-h-50 flex-col gap-3">
-        {column.tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onDragStart={onDragStart} />
-        ))}
-
-        {column.tasks.length === 0 && (
-          <div className="border-border/50 flex flex-1 items-center justify-center rounded-xl border border-dashed p-8">
-            <p className="text-muted-foreground text-xs">تسکی وجود ندارد</p>
-          </div>
-        )}
+        <AnimatePresence mode="popLayout">
+          {column.tasks.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="border-border/50 flex flex-1 items-center justify-center rounded-xl border border-dashed p-8"
+            >
+              <p className="text-muted-foreground text-xs">تسکی وجود ندارد</p>
+            </motion.div>
+          ) : (
+            column.tasks.map((task) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
+                transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+              >
+                <TaskCard task={task} onDragStart={onDragStart} />
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

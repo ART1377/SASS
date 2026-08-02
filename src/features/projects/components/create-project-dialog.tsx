@@ -1,16 +1,8 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -20,11 +12,14 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-import { Plus, Loader2, FolderKanban } from 'lucide-react';
-import { useState } from 'react';
-import { createProjectSchema, type CreateProjectFormData } from '../validations';
-import { useProjects } from '../hooks/use-projects';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { FolderKanban, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useProjects } from '../hooks/use-projects';
+import { createProjectSchema, type CreateProjectFormData } from '../validations';
 
 export function CreateProjectDialog() {
   const [open, setOpen] = useState(false);
@@ -50,26 +45,17 @@ export function CreateProjectDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 shadow-lg shadow-primary/20 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30">
+        <Button className="shadow-primary/20 hover:shadow-primary/30 gap-2 shadow-lg transition-all duration-300 hover:shadow-xl">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">پروژه جدید</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <FolderKanban className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <DialogTitle>ایجاد پروژه جدید</DialogTitle>
-              <DialogDescription>
-                یک پروژه جدید برای تیم خود بسازید
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-        
+        <DialogHeaderWithIcon
+          icon={FolderKanban}
+          title="ایجاد پروژه جدید"
+          description="یک پروژه جدید برای تیم خود بسازید"
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
@@ -79,17 +65,13 @@ export function CreateProjectDialog() {
                 <FormItem>
                   <FormLabel>نام پروژه</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="مثال: وبسایت فروشگاهی"
-                      disabled={isCreating}
-                      {...field}
-                    />
+                    <Input placeholder="مثال: وبسایت فروشگاهی" disabled={isCreating} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="description"
@@ -108,23 +90,12 @@ export function CreateProjectDialog() {
                 </FormItem>
               )}
             />
-            
+
             <div className="flex justify-end gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 انصراف
               </Button>
-              <Button type="submit" disabled={isCreating}>
-                {isCreating ? (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="ml-2 h-4 w-4" />
-                )}
-                ایجاد پروژه
-              </Button>
+              <SubmitButton isLoading={isCreating} icon={Plus} label="ایجاد پروژه" />
             </div>
           </form>
         </Form>

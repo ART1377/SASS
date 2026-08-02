@@ -1,39 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { Skeleton } from '@/shared/components/ui/skeleton';
 import { AlertCircle, CheckSquare, Clock, FolderKanban, TrendingUp, Users } from 'lucide-react';
 import type { DashboardStats } from '../types';
+import { AnimatedNumber } from './animated-number';
 
 interface StatsCardsProps {
   stats?: DashboardStats;
-  isLoading: boolean;
 }
 
-export function StatsCards({ stats, isLoading }: StatsCardsProps) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-8 w-8 rounded-xl" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="mb-1 h-8 w-16" />
-              <Skeleton className="h-3 w-24" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
+export function StatsCards({ stats }: StatsCardsProps) {
   if (!stats) return null;
 
   const cards = [
     {
       title: 'کل پروژه‌ها',
-      value: stats.totalProjects.toLocaleString('fa-IR'),
+      value: stats.totalProjects,
       subtext: `${stats.activeProjects.toLocaleString('fa-IR')} پروژه فعال`,
       icon: FolderKanban,
       trend: null,
@@ -42,7 +22,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     },
     {
       title: 'تسک‌ها',
-      value: stats.totalTasks.toLocaleString('fa-IR'),
+      value: stats.totalTasks,
       subtext: `${stats.statusCounts.IN_PROGRESS.toLocaleString('fa-IR')} در حال انجام`,
       icon: CheckSquare,
       trend:
@@ -55,7 +35,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     },
     {
       title: 'اعضای تیم',
-      value: stats.totalMembers.toLocaleString('fa-IR'),
+      value: stats.totalMembers,
       subtext: 'در پروژه‌های شما',
       icon: Users,
       trend: null,
@@ -64,7 +44,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
     },
     {
       title: 'موعدهای نزدیک',
-      value: stats.upcomingDeadlines.length.toLocaleString('fa-IR'),
+      value: stats.upcomingDeadlines.length,
       subtext: '۷ روز آینده',
       icon: Clock,
       trend:
@@ -97,7 +77,9 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <div className="text-2xl font-bold tracking-tight sm:text-3xl">{card.value}</div>
+              <div className="text-2xl font-bold tracking-tight sm:text-3xl">
+                <AnimatedNumber value={500} />
+              </div>
               {card.trend && (
                 <div
                   className={`flex items-center gap-1 text-xs font-medium ${card.trendUp ? 'text-emerald-500' : 'text-orange-500'}`}

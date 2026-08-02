@@ -1,4 +1,7 @@
+'use client';
+
 import { Button } from '@/shared/components/ui/button';
+import { motion } from 'framer-motion';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface ErrorStateProps {
@@ -13,8 +16,15 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <AlertCircle className="text-destructive h-12 w-12" />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center py-12 text-center"
+    >
+      <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ delay: 0.2, duration: 0.5 }}>
+        <AlertCircle className="text-destructive h-12 w-12" />
+      </motion.div>
       <h3 className="mt-4 text-lg font-semibold">{title}</h3>
       <p className="text-muted-foreground mt-2 text-sm">{message}</p>
       {onRetry && (
@@ -23,6 +33,6 @@ export function ErrorState({
           تلاش مجدد
         </Button>
       )}
-    </div>
+    </motion.div>
   );
 }

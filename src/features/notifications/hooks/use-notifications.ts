@@ -1,6 +1,6 @@
+import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi } from '../api/notifications-api';
 
 export function useNotifications() {
@@ -14,19 +14,15 @@ export function useNotifications() {
     refetchOnWindowFocus: true,
   });
 
-  const markAsReadMutation = useMutation({
+  const markAsReadMutation = useMutationWithToast({
     mutationFn: notificationsApi.markAsRead,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-    },
+    queryKey: queryKeys.notifications.all,
   });
 
-  const markAllAsReadMutation = useMutation({
+  const markAllAsReadMutation = useMutationWithToast({
     mutationFn: notificationsApi.markAllAsRead,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-      toast.success('همه اعلان‌ها خوانده شدند');
-    },
+    queryKey: queryKeys.notifications.all,
+    successMessage: 'همه اعلان‌ها خوانده شدند',
   });
 
   return {

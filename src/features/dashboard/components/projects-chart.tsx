@@ -7,33 +7,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
-import { Skeleton } from '@/shared/components/ui/skeleton';
 import ReactECharts from 'echarts-for-react';
 import { useTheme } from 'next-themes';
 import type { DashboardStats } from '../types';
 
 interface ProjectsChartProps {
   projectStats?: DashboardStats['projectStats'];
-  isLoading: boolean;
 }
 
-export function ProjectsChart({ projectStats, isLoading }: ProjectsChartProps) {
+export function ProjectsChart({ projectStats }: ProjectsChartProps) {
   const { theme } = useTheme();
   const isDark = theme?.includes('dark');
-
-  if (isLoading) {
-    return (
-      <Card className="card-hover border-0 shadow-lg">
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-75 w-full rounded-xl" />
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (!projectStats || projectStats.length === 0) {
     return (

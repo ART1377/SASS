@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/shared/components/ui/button';
 import {
   Form,
   FormControl,
@@ -11,8 +10,9 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { PasswordInput } from '@/shared/components/ui/password-input';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Lock, Mail } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useChangeEmail } from '../hooks/use-settings';
 import { emailFormSchema, type EmailFormData } from '../validations';
@@ -88,16 +88,7 @@ export function EmailForm({ currentEmail }: EmailFormProps) {
             </FormItem>
           )}
         />
-
-        <Button type="submit" disabled={changeEmailMutation.isPending} className="gap-2">
-          {changeEmailMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mail className="h-4 w-4" />
-          )}
-          تغییر ایمیل
-        </Button>
-
+        <SubmitButton isLoading={changeEmailMutation.isPending} icon={Mail} label="تغییر ایمیل" />
         <p className="text-muted-foreground text-xs">
           ⚠️ پس از تغییر ایمیل، باید دوباره وارد حساب کاربری خود شوید
         </p>

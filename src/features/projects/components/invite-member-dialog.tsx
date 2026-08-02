@@ -1,14 +1,8 @@
 'use client';
 
+import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -17,9 +11,10 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/components/ui/form';
-import { Input } from '@/shared/components/ui/input';
+import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Mail, UserPlus } from 'lucide-react';
+import { Mail, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProjects } from '../hooks/use-projects';
@@ -73,19 +68,12 @@ export function InviteMemberDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
-              <UserPlus className="text-primary h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle>دعوت به پروژه</DialogTitle>
-              <DialogDescription>اعضای جدید را به "{projectName}" دعوت کنید</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
+      <DialogContent className="sm:max-w-100">
+        <DialogHeaderWithIcon
+          icon={UserPlus}
+          title={`دعوت عضو به پروژه ${projectName}`}
+          description="با وارد کردن ایمیل کاربر، او را به پروژه دعوت کنید"
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
@@ -95,30 +83,24 @@ export function InviteMemberDialog({
                 <FormItem>
                   <FormLabel>ایمیل کاربر</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Input
-                        type="email"
-                        placeholder="user@example.com"
-                        disabled={isInviting}
-                        className="pr-10"
-                        {...field}
-                      />
-                      <Mail className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
-                    </div>
+                    <InputWithIcon
+                      icon={Mail}
+                      type="email"
+                      placeholder="user@example.com"
+                      disabled={isInviting}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <Button type="submit" disabled={isInviting} className="w-full">
-              {isInviting ? (
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              ) : (
-                <UserPlus className="ml-2 h-4 w-4" />
-              )}
-              دعوت به پروژه
-            </Button>
+            <SubmitButton
+              isLoading={isInviting}
+              icon={UserPlus}
+              label="دعوت به پروژه"
+              className="w-full"
+            />
           </form>
         </Form>
       </DialogContent>

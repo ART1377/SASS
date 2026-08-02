@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/shared/components/ui/button';
 import {
   Form,
   FormControl,
@@ -10,8 +9,9 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { PasswordInput } from '@/shared/components/ui/password-input';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { KeyRound, Loader2, Lock } from 'lucide-react';
+import { KeyRound, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useChangePassword } from '../hooks/use-settings';
 import { passwordFormSchema, type PasswordFormData } from '../validations';
@@ -84,15 +84,11 @@ export function PasswordForm() {
             </FormItem>
           )}
         />
-
-        <Button type="submit" disabled={changePasswordMutation.isPending} className="gap-2">
-          {changePasswordMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <KeyRound className="h-4 w-4" />
-          )}
-          تغییر رمز عبور
-        </Button>
+        <SubmitButton
+          isLoading={changePasswordMutation.isPending}
+          icon={KeyRound}
+          label="تغییر رمز عبور"
+        />
       </form>
     </Form>
   );

@@ -1,8 +1,9 @@
+import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
+import { useOptimisticMutation } from '@/shared/hooks/use-optimistic-mutation';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tasksApi } from '../api/tasks-api';
-import type { UpdateTaskInput } from '../types';
+import type { Task, UpdateTaskInput } from '../types';
 
 export function useTasks(projectId?: string) {
   const queryClient = useQueryClient();
@@ -12,37 +13,29 @@ export function useTasks(projectId?: string) {
     queryFn: () => tasksApi.getAll(projectId ? { projectId } : undefined),
   });
 
-  const createTaskMutation = useMutation({
+  const createTaskMutation = useMutationWithToast({
     mutationFn: tasksApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      toast.success('تسک با موفقیت ایجاد شد');
-    },
-    onError: () => {
-      toast.error('خطا در ایجاد تسک');
+    queryKey: queryKeys.tasks.all,
+    successMessage: 'تسک با موفقیت ایجاد شد',
+    errorMessage: 'خطا در ایجاد تسک',
+  });
+
+  const updateTaskMutation = useOptimisticMutation<Task, { id: string; data: UpdateTaskInput }>({
+    mutationFn: ({ id, data }) => tasksApi.update(id, data),
+    queryKey: queryKeys.tasks.all,
+    successMessage: 'تسک به‌روزرسانی شد',
+    errorMessage: 'خطا در به‌روزرسانی تسک',
+    onOptimisticUpdate: (oldData, { id, data }) => {
+      if (!oldData) return [];
+      return oldData.map((task) => (task.id === id ? { ...task, ...data } : task));
     },
   });
 
-  const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskInput }) => tasksApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      toast.success('تسک به‌روزرسانی شد');
-    },
-    onError: () => {
-      toast.error('خطا در به‌روزرسانی تسک');
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
+  const deleteTaskMutation = useMutationWithToast({
     mutationFn: tasksApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      toast.success('تسک حذف شد');
-    },
-    onError: () => {
-      toast.error('خطا در حذف تسک');
-    },
+    queryKey: queryKeys.tasks.all,
+    successMessage: 'تسک حذف شد',
+    errorMessage: 'خطا در حذف تسک',
   });
 
   return {

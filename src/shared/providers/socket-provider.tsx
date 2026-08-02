@@ -18,39 +18,51 @@ const SocketContext = createContext<SocketContextType>({
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const [isConnected, setIsConnected] = useState(false);
-  const socket = getSocket();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    setMounted(true);
+  }, []);
 
-    socket.connect();
+  useEffect(() => {
+    if (!mounted || !session?.user?.id) return;
 
-    socket.on('connect', () => {
+    const s = getSocket();
+    if (!s) return;
+
+    setSocket(s);
+    s.connect();
+
+    const onConnect = () => {
       setIsConnected(true);
-      // Register user
-      socket.emit('register', {
+      s.emit('register', {
         userId: session.user.id,
         name: session.user.name || 'Unknown',
         avatar: session.user.image || null,
       });
-    });
+    };
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-    });
+    const onDisconnect = () => setIsConnected(false);
+
+    s.on('connect', onConnect);
+    s.on('disconnect', onDisconnect);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
+      s.off('connect', onConnect);
+      s.off('disconnect', onDisconnect);
     };
-  }, [session?.user?.id, session?.user?.name, session?.user?.image, socket]);
+  }, [mounted, session?.user?.id]);
 
-  // Disconnect on unmount
   useEffect(() => {
     return () => {
       disconnectSocket();
     };
   }, []);
+
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>{children}</SocketContext.Provider>

@@ -1,15 +1,9 @@
 'use client';
 
 import { useProjects } from '@/features/projects/hooks/use-projects';
+import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
 import { Label } from '@/shared/components/ui/label';
 import {
   Select,
@@ -54,18 +48,11 @@ export function CreateChatRoom() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-100">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
-              <MessageSquare className="text-primary h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle>ایجاد چت روم</DialogTitle>
-              <DialogDescription>برای یک پروژه چت گروهی بسازید</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
+        <DialogHeaderWithIcon
+          icon={MessageSquare}
+          title="ایجاد چت روم"
+          description="برای یک پروژه چت گروهی بسازید"
+        />
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
             <Label>پروژه</Label>

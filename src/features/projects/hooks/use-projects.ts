@@ -1,3 +1,4 @@
+import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -12,38 +13,26 @@ export function useProjects() {
     queryFn: projectsApi.getAll,
   });
 
-  const createProjectMutation = useMutation({
+  const createProjectMutation = useMutationWithToast({
     mutationFn: projectsApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
-      toast.success('پروژه با موفقیت ایجاد شد');
-    },
-    onError: () => {
-      toast.error('خطا در ایجاد پروژه');
-    },
+    queryKey: queryKeys.projects.all,
+    successMessage: 'پروژه با موفقیت ایجاد شد',
+    errorMessage: 'خطا در ایجاد پروژه',
   });
 
-  const updateProjectMutation = useMutation({
+  const updateProjectMutation = useMutationWithToast({
     mutationFn: ({ id, data }: { id: string; data: UpdateProjectInput }) =>
       projectsApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
-      toast.success('پروژه با موفقیت به‌روزرسانی شد');
-    },
-    onError: () => {
-      toast.error('خطا در به‌روزرسانی پروژه');
-    },
+    queryKey: queryKeys.projects.all,
+    successMessage: 'پروژه با موفقیت به‌روزرسانی شد',
+    errorMessage: 'خطا در به‌روزرسانی پروژه',
   });
 
-  const deleteProjectMutation = useMutation({
+  const deleteProjectMutation = useMutationWithToast({
     mutationFn: projectsApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
-      toast.success('پروژه با موفقیت حذف شد');
-    },
-    onError: () => {
-      toast.error('خطا در حذف پروژه');
-    },
+    queryKey: queryKeys.projects.all,
+    successMessage: 'پروژه با موفقیت حذف شد',
+    errorMessage: 'خطا در حذف پروژه',
   });
 
   const inviteMemberMutation = useMutation({

@@ -1,13 +1,8 @@
 'use client';
 
+import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent } from '@/shared/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -17,9 +12,10 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FolderKanban, Loader2, Pencil } from 'lucide-react';
+import { FolderKanban, Pencil } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProjects } from '../hooks/use-projects';
@@ -65,18 +61,11 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-107">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
-              <FolderKanban className="text-primary h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle>ویرایش پروژه</DialogTitle>
-              <DialogDescription>اطلاعات پروژه را ویرایش کنید</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
+        <DialogHeaderWithIcon
+          icon={FolderKanban}
+          title="ویرایش پروژه"
+          description="اطلاعات پروژه را ویرایش کنید"
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             <FormField
@@ -116,14 +105,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 انصراف
               </Button>
-              <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Pencil className="ml-2 h-4 w-4" />
-                )}
-                ذخیره تغییرات
-              </Button>
+              <SubmitButton isLoading={isUpdating} icon={Pencil} label="ذخیره تغییرات" />
             </div>
           </form>
         </Form>

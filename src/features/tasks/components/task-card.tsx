@@ -3,9 +3,11 @@
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent } from '@/shared/components/ui/card';
+import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { getInitials } from '@/shared/lib/utils';
 import { Calendar, GripVertical, MessageSquare } from 'lucide-react';
-import { PRIORITY_DOT_COLORS, TASK_PRIORITY_LABELS } from '../constants';
+import { memo } from 'react';
+import { TASK_PRIORITY_LABELS } from '../constants';
 import type { Task } from '../types';
 
 interface TaskCardProps {
@@ -13,10 +15,12 @@ interface TaskCardProps {
   onDragStart: (task: Task) => void;
 }
 
-export function TaskCard({ task, onDragStart }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, onDragStart }: TaskCardProps) {
   return (
     <Card
       draggable
+      role="listitem"
+      aria-label={`تسک: ${task.title}`}
       onDragStart={() => onDragStart(task)}
       className="card-hover group cursor-grab border-0 shadow-md transition-all duration-200 active:cursor-grabbing"
     >
@@ -29,10 +33,12 @@ export function TaskCard({ task, onDragStart }: TaskCardProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="gap-1 text-[10px]">
-            <div className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
-            {TASK_PRIORITY_LABELS[task.priority]}
-          </Badge>
+          <StatusBadge
+            status={task.priority}
+            label={TASK_PRIORITY_LABELS[task.priority]}
+            variant="dot"
+            size="xs"
+          />
 
           {task.dueDate && (
             <Badge variant="secondary" className="gap-1 text-[10px]">
@@ -59,4 +65,4 @@ export function TaskCard({ task, onDragStart }: TaskCardProps) {
       </CardContent>
     </Card>
   );
-}
+});

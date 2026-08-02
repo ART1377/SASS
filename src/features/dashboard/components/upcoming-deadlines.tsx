@@ -1,4 +1,3 @@
-import { Badge } from '@/shared/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -6,14 +5,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
-import { Skeleton } from '@/shared/components/ui/skeleton';
+import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { formatDate } from '@/shared/lib/utils';
 import { Calendar, Clock } from 'lucide-react';
 import type { DashboardStats } from '../types';
 
 interface UpcomingDeadlinesProps {
   deadlines?: DashboardStats['upcomingDeadlines'];
-  isLoading: boolean;
 }
 
 const priorityLabels: Record<string, string> = {
@@ -23,30 +21,7 @@ const priorityLabels: Record<string, string> = {
   URGENT: 'فوری',
 };
 
-const priorityColors: Record<string, string> = {
-  LOW: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-  MEDIUM: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  HIGH: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  URGENT: 'bg-red-500/10 text-red-500 border-red-500/20',
-};
-
-export function UpcomingDeadlines({ deadlines, isLoading }: UpcomingDeadlinesProps) {
-  if (isLoading) {
-    return (
-      <Card className="card-hover border-0 shadow-lg">
-        <CardHeader>
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-3 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
-
+export function UpcomingDeadlines({ deadlines }: UpcomingDeadlinesProps) {
   if (!deadlines || deadlines.length === 0) {
     return (
       <Card className="card-hover border-0 shadow-lg">
@@ -86,12 +61,11 @@ export function UpcomingDeadlines({ deadlines, isLoading }: UpcomingDeadlinesPro
                   <span className="text-muted-foreground text-xs">
                     {deadline.dueDate ? formatDate(deadline.dueDate) : 'بدون تاریخ'}
                   </span>
-                  <Badge
-                    variant="outline"
-                    className={`text-[10px] ${priorityColors[deadline.priority] || ''}`}
-                  >
-                    {priorityLabels[deadline.priority] || deadline.priority}
-                  </Badge>
+                  <StatusBadge
+                    status={deadline.priority}
+                    label={priorityLabels[deadline.priority] || deadline.priority}
+                    size="xs"
+                  />
                 </div>
               </div>
             </div>

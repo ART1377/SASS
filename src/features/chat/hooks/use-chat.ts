@@ -1,7 +1,7 @@
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { chatApi } from '../api/chat-api';
 import type { ChatMessage } from '../types';
 import { useChatAPI } from './use-chat-api';
@@ -62,17 +62,11 @@ export function useChatRooms(projectId?: string) {
 
 // ─── Create Chat Room Hook ──────────────────────
 export function useCreateChatRoom() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useMutationWithToast({
     mutationFn: ({ projectId, name }: { projectId: string; name: string }) =>
       chatApi.createRoom(projectId, name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat'] });
-      toast.success('چت روم با موفقیت ایجاد شد');
-    },
-    onError: () => {
-      toast.error('خطا در ایجاد چت روم');
-    },
+    queryKey: ['chat'],
+    successMessage: 'چت روم با موفقیت ایجاد شد',
+    errorMessage: 'خطا در ایجاد چت روم',
   });
 }

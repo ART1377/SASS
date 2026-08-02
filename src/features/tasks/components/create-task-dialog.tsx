@@ -1,15 +1,9 @@
 'use client';
 
 import { useProjects } from '@/features/projects/hooks/use-projects';
+import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -26,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckSquare, Loader2, Plus } from 'lucide-react';
+import { CheckSquare, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTasks } from '../hooks/use-tasks';
@@ -69,18 +64,11 @@ export function CreateTaskDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-125">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
-              <CheckSquare className="text-primary h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle>ایجاد تسک جدید</DialogTitle>
-              <DialogDescription>تسک جدید به برد اضافه کنید</DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
+        <DialogHeaderWithIcon
+          icon={CheckSquare}
+          title="ایجاد تسک جدید"
+          description="تسک جدید به برد اضافه کنید"
+        />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
             {/* Project Select - اضافه شد */}
@@ -92,7 +80,7 @@ export function CreateTaskDialog() {
                   <FormLabel>پروژه</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || undefined}>
                     <FormControl>
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="انتخاب پروژه" />
                       </SelectTrigger>
                     </FormControl>
@@ -197,10 +185,11 @@ export function CreateTaskDialog() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 انصراف
               </Button>
-              <Button type="submit" disabled={isCreating || projects.length === 0}>
-                {isCreating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : null}
-                ایجاد تسک
-              </Button>
+              <SubmitButton
+                isLoading={isCreating}
+                label="ایجاد تسک"
+                disabled={projects.length === 0}
+              />
             </div>
           </form>
         </Form>

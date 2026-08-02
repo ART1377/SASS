@@ -52,7 +52,7 @@ export function MobileHeader() {
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="w-[300px] p-0">
+        <SheetContent side="right" className="w-75 p-0">
           <SheetHeader className="border-b p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

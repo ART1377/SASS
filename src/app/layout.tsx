@@ -2,11 +2,11 @@ import { ToastConfig } from '@/shared/components/toast-config';
 import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { AuthProvider } from '@/shared/providers/auth-provider';
 import { QueryProvider } from '@/shared/providers/query-provider';
+import { SocketProvider } from '@/shared/providers/socket-provider';
 import { ThemeProvider } from '@/shared/providers/theme-provider';
 import type { Metadata } from 'next';
 import { Vazirmatn } from 'next/font/google';
 import './globals.css';
-import { SocketProvider } from '@/shared/providers/socket-provider';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],
@@ -37,12 +37,12 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body className={`${vazirmatn.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              <TooltipProvider>
-                <SocketProvider>{children}</SocketProvider>
-              </TooltipProvider>
+              <SocketProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+              </SocketProvider>
               <ToastConfig />
             </AuthProvider>
           </QueryProvider>

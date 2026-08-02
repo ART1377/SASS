@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/shared/components/ui/button';
 import {
   Form,
   FormControl,
@@ -9,11 +8,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/components/ui/form';
-import { Input } from '@/shared/components/ui/input';
+import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
 import { PasswordInput } from '@/shared/components/ui/password-input';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { ROUTES } from '@/shared/lib/routes';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Mail, User, UserPlus } from 'lucide-react';
+import { Mail, User, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../hooks/use-auth';
@@ -47,15 +47,13 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel className="text-sm font-medium">نام کامل</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input
-                      placeholder="علی محمدی"
-                      disabled={isRegistering}
-                      className="bg-muted/50 focus:bg-background h-11 rounded-xl border-transparent pr-10 transition-all"
-                      {...field}
-                    />
-                    <User className="text-muted-foreground/60 absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2" />
-                  </div>
+                  <InputWithIcon
+                    icon={User}
+                    placeholder="علی محمدی"
+                    disabled={isRegistering}
+                    className="bg-muted/50 focus:bg-background h-11 rounded-xl border-transparent transition-all"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -69,16 +67,14 @@ export function RegisterForm() {
               <FormItem>
                 <FormLabel className="text-sm font-medium">ایمیل</FormLabel>
                 <FormControl>
-                  <div className="relative">
-                    <Input
-                      type="email"
-                      placeholder="example@email.com"
-                      disabled={isRegistering}
-                      className="bg-muted/50 focus:bg-background h-11 rounded-xl border-transparent pr-10 transition-all"
-                      {...field}
-                    />
-                    <Mail className="text-muted-foreground/60 absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2" />
-                  </div>
+                  <InputWithIcon
+                    icon={Mail}
+                    type="email"
+                    placeholder="example@email.com"
+                    disabled={isRegistering}
+                    className="bg-muted/50 focus:bg-background h-11 rounded-xl border-transparent transition-all"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -124,20 +120,12 @@ export function RegisterForm() {
           />
         </div>
 
-        <Button
-          type="submit"
+        <SubmitButton
+          isLoading={isRegistering}
+          icon={UserPlus}
+          label="ایجاد حساب کاربری"
           className="shadow-primary/20 hover:shadow-primary/30 h-11 w-full rounded-xl font-medium shadow-lg transition-all duration-300 hover:shadow-xl"
-          disabled={isRegistering}
-        >
-          {isRegistering ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <UserPlus className="ml-2 h-4 w-4" />
-              ایجاد حساب کاربری
-            </>
-          )}
-        </Button>
+        />
 
         <p className="text-muted-foreground text-center text-sm">
           قبلاً ثبت‌نام کرده‌اید؟{' '}

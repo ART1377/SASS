@@ -1,17 +1,23 @@
 'use client';
 
 import { EmptyState } from '@/shared/components/empty-state';
-import { LoadingSkeleton } from '@/shared/components/loading-skeleton';
 import { Button } from '@/shared/components/ui/button';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useNotifications } from '../hooks/use-notifications';
 import { NotificationItem } from './notification-item';
+import { NotificationItemSkeleton } from './notification-item-skeleton';
 
 export function NotificationList() {
   const { notifications, isLoading, markAllAsRead, unreadCount, isMarkingAll } = useNotifications();
 
   if (isLoading) {
-    return <LoadingSkeleton type="list" count={5} />;
+    return (
+      <div className="bg-card rounded-xl border">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <NotificationItemSkeleton key={i} />
+        ))}
+      </div>
+    );
   }
 
   if (notifications.length === 0) {

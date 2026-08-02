@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@/shared/components/ui/button';
 import {
   Form,
   FormControl,
@@ -10,8 +9,10 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
+import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Mail, Save, User } from 'lucide-react';
+import { Mail, Save, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useUpdateProfile } from '../hooks/use-settings';
 import { profileFormSchema, type ProfileFormData } from '../validations';
@@ -48,10 +49,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             <FormItem>
               <FormLabel>نام کامل</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input placeholder="نام خود را وارد کنید" {...field} className="pr-10" />
-                  <User className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
-                </div>
+                <InputWithIcon icon={User} placeholder="نام خود را وارد کنید" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,15 +72,11 @@ export function ProfileForm({ user }: ProfileFormProps) {
             </FormItem>
           )}
         />
-
-        <Button type="submit" disabled={updateProfileMutation.isPending} className="gap-2">
-          {updateProfileMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          ذخیره تغییرات
-        </Button>
+        <SubmitButton
+          isLoading={updateProfileMutation.isPending}
+          icon={Save}
+          label="ذخیره تغییرات"
+        />
       </form>
     </Form>
   );
