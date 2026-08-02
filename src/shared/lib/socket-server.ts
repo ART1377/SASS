@@ -44,31 +44,52 @@ export function initSocketServer(server: NetServer) {
       socket.data.userId = user.userId;
       socket.data.userName = user.name;
 
-      // Broadcast to all that user is online
-      io?.emit('user:online', {
-        userId: user.userId,
-        name: user.name,
-      });
+      // 🔍 Debug
+      console.log(
+        '[Socket] Online users:',
+        onlineUsers.size,
+        'names:',
+        Array.from(onlineUsers.values()).map((u) => u.name)
+      );
 
-      console.log(`[Socket] User registered: ${user.name} (${user.userId})`);
+      io?.emit('user:online', { userId: user.userId, name: user.name });
+
+      const currentOnlineUsers = Array.from(onlineUsers.entries())
+        .filter(([id]) => id !== socket.id)
+        .map(([_, u]) => ({ userId: u.userId, name: u.name }));
+
+      // 🔍 Debug
+      console.log(
+        '[Socket] Sending online_list to',
+        user.name,
+        ':',
+        currentOnlineUsers.length,
+        'users'
+      );
+
+      socket.emit('users:online_list', currentOnlineUsers);
     });
 
     // Join a chat room
+    // socket-server.ts - اضافه کن
     socket.on('room:join', (roomId: string) => {
       socket.join(roomId);
-      console.log(`[Socket] ${socket.data.userName} joined room ${roomId}`);
 
-      // Notify room members
-      socket.to(roomId).emit('room:user_joined', {
-        userId: socket.data.userId,
-        userName: socket.data.userName,
-        roomId,
-      });
+      // Send current room members count to this user
+      const room = io?.sockets.adapter.rooms.get(roomId);
+      const roomSize = room ? room.size : 0;
+
+      socket.emit('room:online_count', roomSize);
+
+      // Notify others
+      socket.to(roomId).emit('room:online_count', roomSize);
     });
 
     // Leave a chat room
     socket.on('room:leave', (roomId: string) => {
       socket.leave(roomId);
+      console.log(`[Socket] ${socket.data.userName} left room ${roomId}`);
+
       socket.to(roomId).emit('room:user_left', {
         userId: socket.data.userId,
         userName: socket.data.userName,
@@ -87,8 +108,8 @@ export function initSocketServer(server: NetServer) {
         sender: data.sender,
       };
 
-      // Broadcast to everyone in the room (including sender for consistency)
-      io?.to(data.roomId).emit('message:new', message);
+      // Broadcast to everyone in the room EXCEPT sender
+      socket.to(data.roomId).emit('message:new', message);
     });
 
     // Typing indicator

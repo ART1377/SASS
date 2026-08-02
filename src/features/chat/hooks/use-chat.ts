@@ -3,7 +3,6 @@ import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
 import { useQuery } from '@tanstack/react-query';
 import { chatApi } from '../api/chat-api';
-import type { ChatMessage } from '../types';
 import { useChatAPI } from './use-chat-api';
 import { useChatSocket } from './use-chat-socket';
 
@@ -13,11 +12,11 @@ export function useChat(roomId: string) {
   const api = useChatAPI(roomId);
   const socket = useChatSocket(roomId);
 
-  // Deduplicate: API messages (real IDs) + Socket messages from others (temp IDs)
-  const apiIds = new Set(api.messages.map((m: ChatMessage) => m.id));
-  const socketMessages = socket.messages.filter((m) => !apiIds.has(m.id));
+  // ✅ Filter out own messages from socket
+  const socketMessagesFromOthers = socket.messages.filter((m) => m.senderId !== user?.id);
 
-  const allMessages = [...api.messages, ...socketMessages].sort(
+  // Combine API + Socket (others only)
+  const allMessages = [...api.messages, ...socketMessagesFromOthers].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
@@ -37,12 +36,15 @@ export function useChat(roomId: string) {
   return {
     messages: allMessages,
     isLoading: api.isLoading,
+    isError: api.isError,
     sendMessage,
     isSending: api.isSending,
     typingUsers: othersTyping,
     startTyping: socket.startTyping,
     stopTyping: socket.stopTyping,
     currentUser: user,
+    refetch: api.refetch,
+    onlineCount: socket.onlineCount,
   };
 }
 

@@ -13,6 +13,8 @@ export interface ChatRoom {
     messages: number;
     members: number;
   };
+  lastMessage?: ChatMessage;
+  unreadCount?: number;
 }
 
 export interface ChatMessage {
@@ -28,6 +30,22 @@ export interface ChatMessage {
   };
 }
 
+export interface MessageGroup {
+  senderId: string;
+  sender: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+  messages: ChatMessage[];
+  isOwn: boolean;
+}
+
+export interface TypingUser {
+  userId: string;
+  userName: string;
+}
+
 export interface ChatMember {
   id: string;
   roomId: string;
@@ -39,11 +57,6 @@ export interface ChatMember {
   };
   isOnline?: boolean;
   isTyping?: boolean;
-}
-
-export interface TypingUser {
-  userId: string;
-  userName: string;
 }
 
 export interface SocketMessage {

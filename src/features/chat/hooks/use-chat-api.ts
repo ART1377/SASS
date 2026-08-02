@@ -21,7 +21,9 @@ export function useChatAPI(roomId: string) {
   return {
     messages: messagesQuery.data ?? [],
     isLoading: messagesQuery.isLoading,
+    isError: messagesQuery.isError,
     sendToAPI: sendMutation.mutate,
     isSending: sendMutation.isPending,
+    refetch: messagesQuery.refetch,
   };
 }

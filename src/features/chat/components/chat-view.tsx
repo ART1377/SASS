@@ -2,7 +2,9 @@
 
 import { EmptyState } from '@/shared/components/empty-state';
 import { Card } from '@/shared/components/ui/card';
-import { MessageSquare } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useChatRooms } from '../hooks/use-chat';
 import type { ChatRoom } from '../types';
@@ -12,25 +14,76 @@ import { ChatRoomView } from './chat-room-view';
 export function ChatView() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const { rooms } = useChatRooms();
+  const [showSidebar, setShowSidebar] = useState(true);
+
+  const handleSelectRoom = (room: ChatRoom) => {
+    setSelectedRoom(room);
+    // On mobile, hide sidebar
+    if (window.innerWidth < 1024) {
+      setShowSidebar(false);
+    }
+  };
+
+  const handleBack = () => {
+    setSelectedRoom(null);
+    setShowSidebar(true);
+  };
 
   return (
-    <div className="grid h-[calc(100vh-12rem)] gap-4 lg:grid-cols-4">
-      <Card className="overflow-hidden border-0 shadow-sm lg:col-span-1">
-        <ChatRoomList rooms={rooms} selectedRoom={selectedRoom} onSelectRoom={setSelectedRoom} />
-      </Card>
-
-      <Card className="flex flex-col overflow-hidden border-0 shadow-sm lg:col-span-3">
-        {selectedRoom ? (
-          <ChatRoomView chatRoom={selectedRoom} />
-        ) : (
-          <EmptyState
-            icon={MessageSquare}
-            title="چتی انتخاب نشده"
-            description="از لیست سمت راست یک چت را انتخاب کنید"
-            className="h-full"
-          />
+    <div className="relative grid h-[calc(100vh-12rem)] gap-0 overflow-hidden lg:grid-cols-4 lg:gap-4">
+      {/* Sidebar */}
+      <AnimatePresence>
+        {(showSidebar || !selectedRoom) && (
+          <motion.div
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className={cn(
+              'absolute inset-0 z-10 lg:relative lg:z-auto lg:col-span-1',
+              selectedRoom && 'hidden lg:block'
+            )}
+          >
+            <Card className="h-full overflow-hidden border-0 shadow-sm">
+              <ChatRoomList
+                rooms={rooms}
+                selectedRoom={selectedRoom}
+                onSelectRoom={handleSelectRoom}
+              />
+            </Card>
+          </motion.div>
         )}
-      </Card>
+      </AnimatePresence>
+
+      {/* Main Chat Area */}
+      <motion.div
+        className={cn(
+          'flex h-full flex-col overflow-hidden lg:col-span-3',
+          showSidebar && !selectedRoom && 'hidden lg:flex'
+        )}
+      >
+        <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm">
+          {selectedRoom ? (
+            <>
+              {/* Mobile back button */}
+              <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">
+                <button onClick={handleBack} className="hover:bg-muted rounded-lg p-1">
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+                <span className="text-sm font-medium">{selectedRoom.name}</span>
+              </div>
+              <ChatRoomView chatRoom={selectedRoom} />
+            </>
+          ) : (
+            <EmptyState
+              icon={MessageSquare}
+              title="چتی انتخاب نشده"
+              description="از لیست چت‌ها یک گفتگو را انتخاب کنید"
+              className="h-full"
+            />
+          )}
+        </Card>
+      </motion.div>
     </div>
   );
 }
