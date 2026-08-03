@@ -1,29 +1,27 @@
 'use client';
 
 import { useSocket } from '@/shared/providers/socket-provider';
-import { useCallback, useEffect, useState } from 'react';
-import type { SocketMessage, TypingUser } from '../types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReplyInfo, SocketMessage, TypingUser } from '../types';
 
 export function useChatSocket(roomId: string) {
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   const [messages, setMessages] = useState<SocketMessage[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [roomOnlineCount, setRoomOnlineCount] = useState(0);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const joinedRef = useRef(false);
 
-  // Join room on mount
+  // Single useEffect for all socket events
   useEffect(() => {
-    if (!socket?.connected) return;
-    socket.emit('room:join', roomId);
-    return () => {
-      socket.emit('room:leave', roomId);
-    };
-  }, [socket?.connected, roomId]);
+    if (!socket || !isConnected) return;
 
-  // Listen for message & typing events
-  useEffect(() => {
-    if (!socket) return;
+    // Join room (only once)
+    if (!joinedRef.current) {
+      socket.emit('room:join', roomId);
+      joinedRef.current = true;
+    }
 
+    // Message handlers
     const onMessage = (msg: SocketMessage) => {
       setMessages((prev) => [...prev, msg]);
     };
@@ -41,58 +39,36 @@ export function useChatSocket(roomId: string) {
       setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
     };
 
+    const onOnlineCount = (count: number) => {
+      setOnlineCount(count);
+    };
+
     socket.on('message:new', onMessage);
     socket.on('typing:user_started', onTypingStart);
     socket.on('typing:user_stopped', onTypingStop);
+    socket.on('room:online_count', onOnlineCount);
 
     return () => {
       socket.off('message:new', onMessage);
       socket.off('typing:user_started', onTypingStart);
       socket.off('typing:user_stopped', onTypingStop);
+      socket.off('room:online_count', onOnlineCount);
+
+      // Leave room
+      socket.emit('room:leave', roomId);
+      joinedRef.current = false;
       setMessages([]);
       setTypingUsers([]);
+      setOnlineCount(0);
     };
-  }, [socket, roomId]);
-
-  // Listen for online/offline events
-  useEffect(() => {
-    if (!socket) return;
-
-    const onUserOnline = (data: { userId: string; name: string }) => {
-      setOnlineUsers((prev) => new Set(prev).add(data.userId));
-    };
-
-    const onUserOffline = (data: { userId: string; name: string }) => {
-      setOnlineUsers((prev) => {
-        const next = new Set(prev);
-        next.delete(data.userId);
-        return next;
-      });
-    };
-
-    const onOnlineList = (users: { userId: string; name: string }[]) => {
-      console.log(
-        '[Client] users:online_list received:',
-        users.length,
-        'users:',
-        users.map((u) => u.name)
-      );
-      setOnlineUsers(new Set(users.map((u) => u.userId)));
-    };
-
-    socket.on('user:online', onUserOnline);
-    socket.on('user:offline', onUserOffline);
-    socket.on('users:online_list', onOnlineList);
-
-    return () => {
-      socket.off('user:online', onUserOnline);
-      socket.off('user:offline', onUserOffline);
-      socket.off('users:online_list', onOnlineList);
-    };
-  }, [socket]);
+  }, [socket, isConnected, roomId]);
 
   const send = useCallback(
-    (content: string, sender: { id: string; name: string; image: string | null }) => {
+    (
+      content: string,
+      sender: { id: string; name: string; image: string | null },
+      replyTo?: ReplyInfo
+    ) => {
       if (!socket) return;
       socket.emit('message:send', {
         roomId,
@@ -102,14 +78,11 @@ export function useChatSocket(roomId: string) {
           name: sender.name,
           avatar: sender.image,
         },
+        replyTo: replyTo || null,
       });
     },
     [socket, roomId]
   );
-
-  socket?.on('room:online_count', (count: number) => {
-    setRoomOnlineCount(count);
-  });
 
   const startTyping = useCallback(() => {
     socket?.emit('typing:start', { roomId });
@@ -119,12 +92,5 @@ export function useChatSocket(roomId: string) {
     socket?.emit('typing:stop', { roomId });
   }, [socket, roomId]);
 
-  return {
-    messages,
-    typingUsers,
-    send,
-    startTyping,
-    stopTyping,
-    onlineCount: roomOnlineCount,
-  };
+  return { messages, typingUsers, onlineCount, send, startTyping, stopTyping };
 }

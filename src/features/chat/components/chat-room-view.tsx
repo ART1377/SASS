@@ -1,11 +1,24 @@
 'use client';
 
 import { ErrorState } from '@/shared/components/error-state';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
+import { AnimatePresence } from 'framer-motion';
 import { Hash, Users } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import { useChat } from '../hooks/use-chat';
-import type { ChatRoom } from '../types';
-import { ChatInput } from './chat-input';
+import type { ChatRoom, ReplyInfo } from '../types';
+import { ChatInput, type ChatInputHandle } from './chat-input';
 import { ChatMessages } from './chat-messages';
+import { ReplyPreview } from './reply-preview';
 
 export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   const {
@@ -20,7 +33,50 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     currentUser,
     refetch,
     onlineCount,
+    deleteMessage,
+    updateMessage,
   } = useChat(chatRoom.id);
+
+  const chatInputRef = useRef<ChatInputHandle>(null);
+  const [replyTo, setReplyTo] = useState<ReplyInfo | null>(null);
+  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<{ id: string; content: string } | null>(
+    null
+  );
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const handleEdit = useCallback((messageId: string, content: string) => {
+    setEditingMessage({ id: messageId, content });
+  }, []);
+
+  const handleDeleteRequest = useCallback((messageId: string) => {
+    setDeleteTarget(messageId);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteTarget) {
+      deleteMessage(deleteTarget);
+      setDeleteTarget(null);
+    }
+  }, [deleteTarget, deleteMessage]);
+
+  const handleReply = useCallback((message: ReplyInfo) => {
+    setReplyTo(message);
+    chatInputRef.current?.focus();
+  }, []);
+
+  const handleSend = useCallback(
+    (content: string) => {
+      if (editingMessage) {
+        updateMessage(editingMessage.id, content);
+        setEditingMessage(null);
+      } else {
+        sendMessage(content, replyTo || undefined);
+      }
+      setReplyTo(null);
+    },
+    [sendMessage, replyTo, editingMessage, updateMessage]
+  );
 
   if (isError) {
     return (
@@ -34,7 +90,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
 
   return (
     <>
-      {/* Header Info */}
       <div className="flex items-center gap-3 border-b px-4 py-3">
         <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-xl">
           {chatRoom.type === 'GROUP' ? (
@@ -51,21 +106,57 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         </div>
       </div>
 
-      {/* Messages */}
+      <AnimatePresence>
+        {replyTo && (
+          <ReplyPreview
+            replyTo={replyTo}
+            onClear={() => setReplyTo(null)}
+            onClick={() => setScrollToMessageId(replyTo.id)}
+          />
+        )}
+      </AnimatePresence>
+
       <ChatMessages
         messages={messages}
         currentUserId={currentUser?.id || ''}
         isLoading={isLoading}
         typingUsers={typingUsers}
+        onReply={handleReply}
+        scrollToMessageId={scrollToMessageId}
+        onReplyClick={(messageId) => setScrollToMessageId(messageId)}
+        onEdit={handleEdit}
+        onDelete={handleDeleteRequest}
       />
 
-      {/* Input */}
       <ChatInput
-        onSend={sendMessage}
+        ref={chatInputRef}
+        onSend={handleSend}
         isSending={isSending}
         onStartTyping={startTyping}
         onStopTyping={stopTyping}
+        editMessage={editingMessage}
+        onCancelEdit={() => setEditingMessage(null)}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف پیام</AlertDialogTitle>
+            <AlertDialogDescription>
+              از حذف این پیام مطمئن هستید؟ این عمل قابل بازگشت نیست.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>انصراف</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

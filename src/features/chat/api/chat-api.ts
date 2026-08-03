@@ -16,9 +16,14 @@ export const chatApi = {
     return response.data;
   },
 
-  sendMessage: async (roomId: string, content: string): Promise<ChatMessage> => {
+  sendMessage: async (
+    roomId: string,
+    content: string,
+    replyToId?: string
+  ): Promise<ChatMessage> => {
     const response = await apiClient.post<ChatMessage>(`/chat/rooms/${roomId}/messages`, {
       content,
+      replyToId: replyToId || undefined,
     });
     return response.data;
   },
@@ -29,6 +34,24 @@ export const chatApi = {
       name,
       type: 'GROUP',
     });
+    return response.data;
+  },
+
+  deleteMessage: async (roomId: string, messageId: string): Promise<void> => {
+    await apiClient.delete(`/chat/rooms/${roomId}/messages/${messageId}`);
+  },
+
+  updateMessage: async (
+    roomId: string,
+    messageId: string,
+    content: string
+  ): Promise<ChatMessage> => {
+    const response = await apiClient.patch<ChatMessage>(
+      `/chat/rooms/${roomId}/messages/${messageId}`,
+      {
+        content,
+      }
+    );
     return response.data;
   },
 };

@@ -9,19 +9,17 @@ import { useState } from 'react';
 import { useChatRooms } from '../hooks/use-chat';
 import type { ChatRoom } from '../types';
 import { ChatRoomList } from './chat-room-list';
+import { ChatRoomListSkeleton } from './chat-room-list-skeleton';
 import { ChatRoomView } from './chat-room-view';
 
 export function ChatView() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
-  const { rooms } = useChatRooms();
   const [showSidebar, setShowSidebar] = useState(true);
+  const { data: rooms = [], isLoading: isRoomsLoading } = useChatRooms();
 
   const handleSelectRoom = (room: ChatRoom) => {
     setSelectedRoom(room);
-    // On mobile, hide sidebar
-    if (window.innerWidth < 1024) {
-      setShowSidebar(false);
-    }
+    if (window.innerWidth < 1024) setShowSidebar(false);
   };
 
   const handleBack = () => {
@@ -30,7 +28,7 @@ export function ChatView() {
   };
 
   return (
-    <div className="relative grid h-[calc(100vh-12rem)] gap-0 overflow-hidden lg:grid-cols-4 lg:gap-4">
+    <div className="relative grid h-[calc(100vh-14rem)] gap-0 overflow-hidden lg:grid-cols-4 lg:gap-4">
       {/* Sidebar */}
       <AnimatePresence>
         {(showSidebar || !selectedRoom) && (
@@ -45,11 +43,15 @@ export function ChatView() {
             )}
           >
             <Card className="h-full overflow-hidden border-0 shadow-sm">
-              <ChatRoomList
-                rooms={rooms}
-                selectedRoom={selectedRoom}
-                onSelectRoom={handleSelectRoom}
-              />
+              {isRoomsLoading ? (
+                <ChatRoomListSkeleton />
+              ) : (
+                <ChatRoomList
+                  rooms={rooms}
+                  selectedRoom={selectedRoom}
+                  onSelectRoom={handleSelectRoom}
+                />
+              )}
             </Card>
           </motion.div>
         )}
@@ -65,7 +67,6 @@ export function ChatView() {
         <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm">
           {selectedRoom ? (
             <>
-              {/* Mobile back button */}
               <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">
                 <button onClick={handleBack} className="hover:bg-muted rounded-lg p-1">
                   <ArrowRight className="h-5 w-5" />

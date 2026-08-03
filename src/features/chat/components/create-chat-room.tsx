@@ -57,7 +57,7 @@ export function CreateChatRoom() {
           <div className="space-y-2">
             <Label>پروژه</Label>
             <Select value={projectId} onValueChange={setProjectId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="انتخاب پروژه" />
               </SelectTrigger>
               <SelectContent>

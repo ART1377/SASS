@@ -44,73 +44,59 @@ export function initSocketServer(server: NetServer) {
       socket.data.userId = user.userId;
       socket.data.userName = user.name;
 
-      // 🔍 Debug
-      console.log(
-        '[Socket] Online users:',
-        onlineUsers.size,
-        'names:',
-        Array.from(onlineUsers.values()).map((u) => u.name)
-      );
-
       io?.emit('user:online', { userId: user.userId, name: user.name });
 
       const currentOnlineUsers = Array.from(onlineUsers.entries())
         .filter(([id]) => id !== socket.id)
         .map(([_, u]) => ({ userId: u.userId, name: u.name }));
 
-      // 🔍 Debug
-      console.log(
-        '[Socket] Sending online_list to',
-        user.name,
-        ':',
-        currentOnlineUsers.length,
-        'users'
-      );
-
       socket.emit('users:online_list', currentOnlineUsers);
     });
 
-    // Join a chat room
-    // socket-server.ts - اضافه کن
+    // room:join - send online count
     socket.on('room:join', (roomId: string) => {
       socket.join(roomId);
+      console.log(`[Socket] ${socket.data.userName} joined room ${roomId}`);
 
-      // Send current room members count to this user
       const room = io?.sockets.adapter.rooms.get(roomId);
-      const roomSize = room ? room.size : 0;
+      const count = room ? room.size : 0;
 
-      socket.emit('room:online_count', roomSize);
-
-      // Notify others
-      socket.to(roomId).emit('room:online_count', roomSize);
+      io?.to(roomId).emit('room:online_count', count);
     });
 
-    // Leave a chat room
     socket.on('room:leave', (roomId: string) => {
       socket.leave(roomId);
       console.log(`[Socket] ${socket.data.userName} left room ${roomId}`);
 
-      socket.to(roomId).emit('room:user_left', {
-        userId: socket.data.userId,
-        userName: socket.data.userName,
-        roomId,
-      });
+      const room = io?.sockets.adapter.rooms.get(roomId);
+      const count = room ? room.size : 0;
+
+      io?.to(roomId).emit('room:online_count', count);
     });
 
     // Send a message
-    socket.on('message:send', (data: { roomId: string; content: string; sender: SocketUser }) => {
-      const message = {
-        id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        roomId: data.roomId,
-        senderId: data.sender.userId,
-        content: data.content,
-        createdAt: new Date().toISOString(),
-        sender: data.sender,
-      };
+    // Send a message
+    socket.on(
+      'message:send',
+      (data: {
+        roomId: string;
+        content: string;
+        sender: SocketUser;
+        replyTo?: { id: string; content: string; sender: { id: string; name: string } } | null;
+      }) => {
+        const message = {
+          id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          roomId: data.roomId,
+          senderId: data.sender.userId,
+          content: data.content,
+          replyTo: data.replyTo || null,
+          createdAt: new Date().toISOString(),
+          sender: data.sender,
+        };
 
-      // Broadcast to everyone in the room EXCEPT sender
-      socket.to(data.roomId).emit('message:new', message);
-    });
+        socket.to(data.roomId).emit('message:new', message);
+      }
+    );
 
     // Typing indicator
     socket.on('typing:start', (data: { roomId: string }) => {

@@ -12,7 +12,23 @@ export function useChatAPI(roomId: string) {
   });
 
   const sendMutation = useMutation({
-    mutationFn: (content: string) => chatApi.sendMessage(roomId, content),
+    mutationFn: ({ content, replyToId }: { content: string; replyToId?: string }) =>
+      chatApi.sendMessage(roomId, content, replyToId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.messages(roomId) });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (messageId: string) => chatApi.deleteMessage(roomId, messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.chat.messages(roomId) });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
+      chatApi.updateMessage(roomId, messageId, content),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.messages(roomId) });
     },
@@ -22,8 +38,13 @@ export function useChatAPI(roomId: string) {
     messages: messagesQuery.data ?? [],
     isLoading: messagesQuery.isLoading,
     isError: messagesQuery.isError,
-    sendToAPI: sendMutation.mutate,
+    sendToAPI: (content: string, replyToId?: string) => sendMutation.mutate({ content, replyToId }),
     isSending: sendMutation.isPending,
     refetch: messagesQuery.refetch,
+    deleteMessage: deleteMutation.mutate,
+    isDeleting: deleteMutation.isPending,
+    updateMessage: (messageId: string, content: string) =>
+      updateMutation.mutate({ messageId, content }),
+    isUpdating: updateMutation.isPending,
   };
 }

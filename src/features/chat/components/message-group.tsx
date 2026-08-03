@@ -1,0 +1,77 @@
+'use client';
+
+import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
+import { cn, formatDateTime, getInitials } from '@/shared/lib/utils';
+import { motion } from 'framer-motion';
+import type { MessageGroup, ReplyInfo } from '../types';
+import { MessageBubble } from './message-bubble';
+
+interface MessageGroupProps {
+  group: MessageGroup;
+  isFirst: boolean;
+  onReply: (message: ReplyInfo) => void;
+  highlightedId: string | null;
+  onSetRef: (id: string, el: HTMLDivElement | null) => void;
+  onReplyClick?: (messageId: string) => void;
+  onEdit?: (messageId: string, content: string) => void;
+  onDelete?: (messageId: string) => void;
+}
+
+export function MessageGroupBubble({
+  group,
+  isFirst,
+  onReply,
+  highlightedId,
+  onSetRef,
+  onReplyClick,
+  onEdit,
+  onDelete,
+}: MessageGroupProps) {
+  return (
+    <motion.div
+      initial={isFirst ? { opacity: 0, y: 20 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        'group/message flex items-end gap-2',
+        group.isOwn ? 'flex-row' : 'flex-row-reverse'
+      )}
+    >
+      {!group.isOwn && (
+        <Avatar className="ring-border h-7 w-7 shrink-0 ring-2">
+          <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-medium">
+            {getInitials(group.sender.name)}
+          </AvatarFallback>
+        </Avatar>
+      )}
+
+      <div className={cn('max-w-[75%] space-y-1', group.isOwn ? 'items-end' : 'items-start')}>
+        {!group.isOwn && (
+          <p className="text-muted-foreground px-1 text-[10px] font-medium">{group.sender.name}</p>
+        )}
+
+        {group.messages.map((msg) => (
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            isOwn={group.isOwn}
+            isHighlighted={highlightedId === msg.id}
+            onReply={onReply}
+            onSetRef={onSetRef}
+            onReplyClick={onReplyClick}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ))}
+
+        <p
+          className={cn(
+            'text-muted-foreground/50 px-1 text-[10px]',
+            group.isOwn ? 'text-left' : 'text-right'
+          )}
+        >
+          {formatDateTime(group.messages[group.messages.length - 1].createdAt)}
+        </p>
+      </div>
+    </motion.div>
+  );
+}

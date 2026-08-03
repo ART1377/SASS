@@ -21,16 +21,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ room
       },
       include: {
         sender: {
+          select: { id: true, name: true, avatar: true },
+        },
+        replyTo: {
           select: {
             id: true,
-            name: true,
-            avatar: true,
+            content: true,
+            sender: { select: { id: true, name: true } },
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
       take: limit,
     });
 
@@ -49,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
     }
 
     const { roomId } = await params;
-    const { content } = await request.json();
+    const { content, replyToId } = await request.json();
 
     if (!content?.trim()) {
       return NextResponse.json({ error: 'متن پیام نمی‌تواند خالی باشد' }, { status: 400 });
@@ -60,19 +61,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
         roomId,
         senderId: session.user.id,
         content: content.trim(),
+        replyToId: replyToId || null,
       },
       include: {
         sender: {
+          select: { id: true, name: true, avatar: true },
+        },
+        replyTo: {
           select: {
             id: true,
-            name: true,
-            avatar: true,
+            content: true,
+            sender: { select: { id: true, name: true } },
           },
         },
       },
     });
 
-    // Update room's updatedAt
     await prisma.chatRoom.update({
       where: { id: roomId },
       data: { updatedAt: new Date() },

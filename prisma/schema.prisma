@@ -145,10 +145,13 @@ model ChatMessage {
   roomId    String
   senderId  String
   content   String
+  replyToId String?
   createdAt DateTime @default(now())
 
-  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  room    ChatRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender  User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo ChatMessage? @relation("Reply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies ChatMessage[] @relation("Reply")
 }
 
 model ChatRoomMember {

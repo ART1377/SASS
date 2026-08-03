@@ -17,11 +17,22 @@ export interface ChatRoom {
   unreadCount?: number;
 }
 
+export interface ReplyInfo {
+  id: string;
+  content: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+}
+
 export interface ChatMessage {
   id: string;
   roomId: string;
   senderId: string;
   content: string;
+  replyToId?: string | null;
+  replyTo?: ReplyInfo | null;
   createdAt: string;
   sender: {
     id: string;
@@ -64,6 +75,7 @@ export interface SocketMessage {
   roomId: string;
   senderId: string;
   content: string;
+  replyTo?: ReplyInfo | null;
   createdAt: string;
   sender: {
     id: string;

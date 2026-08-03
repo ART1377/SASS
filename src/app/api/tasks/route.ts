@@ -13,7 +13,6 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     if (projectId) where.projectId = projectId;
@@ -53,7 +52,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    console.log('Create task body:', body); // Debug log
 
     const { title, description, priority, projectId, assigneeId, dueDate } = body;
 

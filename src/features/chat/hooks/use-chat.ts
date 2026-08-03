@@ -1,8 +1,12 @@
+'use client';
+
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { chatApi } from '../api/chat-api';
+import type { ChatMessage, ReplyInfo } from '../types';
 import { useChatAPI } from './use-chat-api';
 import { useChatSocket } from './use-chat-socket';
 
@@ -12,29 +16,42 @@ export function useChat(roomId: string) {
   const api = useChatAPI(roomId);
   const socket = useChatSocket(roomId);
 
-  // ✅ Filter out own messages from socket
-  const socketMessagesFromOthers = socket.messages.filter((m) => m.senderId !== user?.id);
+  // Merge & deduplicate messages
+  const messages = useMemo(() => {
+    const apiIds = new Set(api.messages.map((m: ChatMessage) => m.id));
+    const socketMessages = socket.messages.filter(
+      (m) => !apiIds.has(m.id) && m.senderId !== user?.id
+    );
 
-  // Combine API + Socket (others only)
-  const allMessages = [...api.messages, ...socketMessagesFromOthers].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    return [...api.messages, ...socketMessages].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  }, [api.messages, socket.messages, user?.id]);
+
+  // Filter typing users
+  const othersTyping = useMemo(
+    () => socket.typingUsers.filter((u) => u.userId !== user?.id),
+    [socket.typingUsers, user?.id]
   );
 
-  // Filter out current user from typing
-  const othersTyping = socket.typingUsers.filter((u) => u.userId !== user?.id);
-
-  const sendMessage = (content: string) => {
+  const sendMessage = (content: string, replyTo?: ReplyInfo) => {
     if (!content.trim() || !user) return;
-    socket.send(content, {
-      id: user.id as string,
-      name: user.name || '',
-      image: user.image || null,
-    });
-    api.sendToAPI(content);
+
+    socket.send(
+      content,
+      {
+        id: user.id as string,
+        name: user.name || '',
+        image: user.image || null,
+      },
+      replyTo
+    );
+
+    api.sendToAPI(content, replyTo?.id);
   };
 
   return {
-    messages: allMessages,
+    messages,
     isLoading: api.isLoading,
     isError: api.isError,
     sendMessage,
@@ -45,21 +62,18 @@ export function useChat(roomId: string) {
     currentUser: user,
     refetch: api.refetch,
     onlineCount: socket.onlineCount,
+    deleteMessage: api.deleteMessage,
+    updateMessage: api.updateMessage,
   };
 }
 
 // ─── Chat Rooms Hook ────────────────────────────
 export function useChatRooms(projectId?: string) {
-  const query = useQuery({
+  return useQuery({
     queryKey: queryKeys.chat.rooms(projectId || 'all'),
     queryFn: () => chatApi.getRooms(projectId),
     staleTime: 60 * 1000,
   });
-
-  return {
-    rooms: query.data ?? [],
-    isLoading: query.isLoading,
-  };
 }
 
 // ─── Create Chat Room Hook ──────────────────────

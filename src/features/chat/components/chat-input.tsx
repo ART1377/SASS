@@ -3,11 +3,11 @@
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Send } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pencil, Send, X } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 const MAX_LENGTH = 1000;
-const MIN_HEIGHT = 44;
+const MIN_HEIGHT = 36;
 const MAX_HEIGHT = 120;
 
 interface Props {
@@ -15,119 +15,150 @@ interface Props {
   isSending: boolean;
   onStartTyping: () => void;
   onStopTyping: () => void;
+  editMessage?: { id: string; content: string } | null;
+  onCancelEdit?: () => void;
 }
 
-export function ChatInput({ onSend, isSending, onStartTyping, onStopTyping }: Props) {
+export interface ChatInputHandle {
+  focus: () => void;
+}
+
+export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
+  { onSend, isSending, onStartTyping, onStopTyping, editMessage, onCancelEdit },
+  ref
+) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // Auto-resize
-  const adjustHeight = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = `${MIN_HEIGHT}px`;
-    const scrollHeight = textarea.scrollHeight;
-    textarea.style.height = `${Math.min(Math.max(scrollHeight, MIN_HEIGHT), MAX_HEIGHT)}px`;
-  }, []);
+  useImperativeHandle(ref, () => ({
+    focus: () => textareaRef.current?.focus(),
+  }));
 
   useEffect(() => {
-    adjustHeight();
-  }, [value, adjustHeight]);
+    if (editMessage) {
+      setValue(editMessage.content);
+      textareaRef.current?.focus();
+    }
+  }, [editMessage]);
 
-  // Send message
+  const adjustHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = `${MIN_HEIGHT}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, MIN_HEIGHT), MAX_HEIGHT)}px`;
+  }, []);
+
+  useEffect(() => adjustHeight(), [value, adjustHeight]);
+
   const send = useCallback(() => {
     const content = value.trim();
     if (!content || isSending || content.length > MAX_LENGTH) return;
     onSend(content);
     setValue('');
     onStopTyping();
-    if (textareaRef.current) {
-      textareaRef.current.style.height = `${MIN_HEIGHT}px`;
-    }
+    onCancelEdit?.();
+    if (textareaRef.current) textareaRef.current.style.height = `${MIN_HEIGHT}px`;
     textareaRef.current?.focus();
-  }, [value, isSending, onSend, onStopTyping]);
+  }, [value, isSending, onSend, onStopTyping, onCancelEdit]);
 
-  // Handle typing indicator
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
     onStartTyping();
-    if (typingRef.current) clearTimeout(typingRef.current);
+    clearTimeout(typingRef.current!);
     typingRef.current = setTimeout(onStopTyping, 1500);
   };
 
-  // Keyboard handlers
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       send();
     }
+    if (e.key === 'Escape' && editMessage) {
+      setValue('');
+      onCancelEdit?.();
+    }
   };
 
-  useEffect(() => {
-    return () => {
-      if (typingRef.current) clearTimeout(typingRef.current);
-    };
-  }, []);
+  useEffect(() => () => clearTimeout(typingRef.current!), []);
 
-  const isOverLimit = value.length > MAX_LENGTH;
+  const canSend = value.trim().length > 0 && !isSending && value.length <= MAX_LENGTH;
   const isNearLimit = value.length > MAX_LENGTH * 0.8;
+  const isOverLimit = value.length > MAX_LENGTH;
 
   return (
-    <div className="bg-background border-t p-3">
-      <div
-        className={cn(
-          'bg-muted/40 focus-within:bg-muted/60 flex items-end gap-2 rounded-2xl p-1.5 transition-all',
-          'focus-within:ring-primary/20 focus-within:ring-1'
-        )}
-      >
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder="پیام خود را بنویسید..."
-          rows={1}
-          disabled={isSending}
-          className={cn(
-            'placeholder:text-muted-foreground/50 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm',
-            'focus:outline-none disabled:opacity-50'
-          )}
-          style={{ height: MIN_HEIGHT }}
-        />
-
-        <motion.div
-          initial={false}
-          animate={value.trim() ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          <Button
-            onClick={send}
-            disabled={!value.trim() || isSending || isOverLimit}
-            size="icon"
-            className="h-9 w-9 shrink-0 rounded-xl shadow-none"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </motion.div>
-      </div>
-
-      {/* Character counter */}
+    <div className="bg-background border-t">
       <AnimatePresence>
-        {isNearLimit && (
-          <motion.p
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            className={cn(
-              'mt-1 px-2 text-[10px]',
-              isOverLimit ? 'text-destructive' : 'text-muted-foreground'
-            )}
+        {editMessage && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-primary/5 flex items-center gap-2 border-b px-4 py-2"
           >
-            {value.length} / {MAX_LENGTH}
-          </motion.p>
+            <Pencil className="text-primary h-3.5 w-3.5 shrink-0" />
+            <span className="text-muted-foreground flex-1 truncate text-xs">
+              ویرایش: {editMessage.content}
+            </span>
+            <button
+              onClick={() => {
+                setValue('');
+                onCancelEdit?.();
+              }}
+              className="hover:bg-muted cursor-pointer rounded-lg p-1 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
+
+      <div className="p-3">
+        <div className="bg-muted/40 focus-within:bg-muted/60 focus-within:ring-primary/20 flex items-end gap-2 rounded-2xl p-1.5 transition-all focus-within:ring-1">
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder="پیام خود را بنویسید..."
+            rows={1}
+            disabled={isSending}
+            className="placeholder:text-muted-foreground/50 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed focus:outline-none disabled:opacity-50"
+            style={{ height: MIN_HEIGHT, minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
+          />
+          <motion.div
+            initial={false}
+            animate={canSend ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="shrink-0"
+          >
+            <Button
+              onClick={send}
+              disabled={!canSend}
+              size="icon"
+              className="h-9 w-9 rounded-xl shadow-none"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </motion.div>
+        </div>
+
+        <AnimatePresence>
+          {isNearLimit && (
+            <motion.p
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className={cn(
+                'mt-1 px-2 text-[10px]',
+                isOverLimit ? 'text-destructive font-medium' : 'text-muted-foreground'
+              )}
+            >
+              {value.length} / {MAX_LENGTH}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
-}
+});
