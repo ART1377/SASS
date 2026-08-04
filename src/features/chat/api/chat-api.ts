@@ -1,5 +1,11 @@
 import { apiClient } from '@/shared/config/axios';
+import { MESSAGES_PAGE_SIZE } from '../constants';
 import type { ChatMessage, ChatRoom } from '../types';
+
+export interface MessagesPage {
+  messages: ChatMessage[];
+  nextCursor: string | null;
+}
 
 export const chatApi = {
   getRooms: async (projectId?: string): Promise<ChatRoom[]> => {
@@ -9,21 +15,17 @@ export const chatApi = {
     return response.data;
   },
 
-  getMessages: async (roomId: string, limit = 50): Promise<ChatMessage[]> => {
-    const response = await apiClient.get<ChatMessage[]>(`/chat/rooms/${roomId}/messages`, {
-      params: { limit },
-    });
-    return response.data;
-  },
-
-  sendMessage: async (
+  /**
+   * Fetches a page of messages, newest-first pagination via `before` cursor.
+   * `messages` is returned in ascending (chronological) order, ready to render.
+   */
+  getMessages: async (
     roomId: string,
-    content: string,
-    replyToId?: string
-  ): Promise<ChatMessage> => {
-    const response = await apiClient.post<ChatMessage>(`/chat/rooms/${roomId}/messages`, {
-      content,
-      replyToId: replyToId || undefined,
+    before?: string,
+    limit = MESSAGES_PAGE_SIZE
+  ): Promise<MessagesPage> => {
+    const response = await apiClient.get<MessagesPage>(`/chat/rooms/${roomId}/messages`, {
+      params: { limit, before },
     });
     return response.data;
   },
@@ -48,9 +50,7 @@ export const chatApi = {
   ): Promise<ChatMessage> => {
     const response = await apiClient.patch<ChatMessage>(
       `/chat/rooms/${roomId}/messages/${messageId}`,
-      {
-        content,
-      }
+      { content }
     );
     return response.data;
   },

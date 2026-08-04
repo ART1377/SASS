@@ -16,9 +16,7 @@ export async function GET(request: Request) {
       where: {
         ...(projectId ? { projectId } : {}),
         members: {
-          some: {
-            userId: session.user.id,
-          },
+          some: { userId: session.user.id },
         },
       },
       include: {
@@ -29,9 +27,7 @@ export async function GET(request: Request) {
           select: { messages: true, members: true },
         },
       },
-      orderBy: {
-        updatedAt: 'desc',
-      },
+      orderBy: { updatedAt: 'desc' },
     });
 
     return NextResponse.json(rooms);
@@ -50,24 +46,30 @@ export async function POST(request: Request) {
 
     const { projectId, name, type } = await request.json();
 
+    if (!projectId || typeof projectId !== 'string') {
+      return NextResponse.json({ error: 'پروژه نامعتبر است' }, { status: 400 });
+    }
+
+    // Only members of the project may create a chat room for it.
+    const isProjectMember = await prisma.projectMember.findFirst({
+      where: { projectId, userId: session.user.id },
+    });
+    if (!isProjectMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const room = await prisma.chatRoom.create({
       data: {
         projectId,
         name,
-        type: type || 'GROUP',
+        type: type === 'DIRECT' ? 'DIRECT' : 'GROUP',
         members: {
-          create: {
-            userId: session.user.id,
-          },
+          create: { userId: session.user.id },
         },
       },
       include: {
-        project: {
-          select: { id: true, name: true },
-        },
-        _count: {
-          select: { messages: true, members: true },
-        },
+        project: { select: { id: true, name: true } },
+        _count: { select: { messages: true, members: true } },
       },
     });
 

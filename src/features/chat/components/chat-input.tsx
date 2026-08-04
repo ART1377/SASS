@@ -5,8 +5,8 @@ import { cn } from '@/shared/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Pencil, Send, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { MAX_MESSAGE_LENGTH, TYPING_TIMEOUT_MS } from '../constants';
 
-const MAX_LENGTH = 1000;
 const MIN_HEIGHT = 36;
 const MAX_HEIGHT = 120;
 
@@ -53,24 +53,28 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
 
   const send = useCallback(() => {
     const content = value.trim();
-    if (!content || isSending || content.length > MAX_LENGTH) return;
+    if (!content || content.length > MAX_MESSAGE_LENGTH) return;
     onSend(content);
     setValue('');
     onStopTyping();
     onCancelEdit?.();
     if (textareaRef.current) textareaRef.current.style.height = `${MIN_HEIGHT}px`;
     textareaRef.current?.focus();
-  }, [value, isSending, onSend, onStopTyping, onCancelEdit]);
+  }, [value, onSend, onStopTyping, onCancelEdit]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
     onStartTyping();
     clearTimeout(typingRef.current!);
-    typingRef.current = setTimeout(onStopTyping, 1500);
+    typingRef.current = setTimeout(onStopTyping, TYPING_TIMEOUT_MS);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // On touch devices Enter should insert a newline, not send — mobile
+    // users don't have a discoverable Shift key equivalent.
+    const isTouchDevice =
+      typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+    if (e.key === 'Enter' && !e.shiftKey && !isTouchDevice) {
       e.preventDefault();
       send();
     }
@@ -82,9 +86,9 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
 
   useEffect(() => () => clearTimeout(typingRef.current!), []);
 
-  const canSend = value.trim().length > 0 && !isSending && value.length <= MAX_LENGTH;
-  const isNearLimit = value.length > MAX_LENGTH * 0.8;
-  const isOverLimit = value.length > MAX_LENGTH;
+  const canSend = value.trim().length > 0 && !isSending && value.length <= MAX_MESSAGE_LENGTH;
+  const isNearLimit = value.length > MAX_MESSAGE_LENGTH * 0.8;
+  const isOverLimit = value.length > MAX_MESSAGE_LENGTH;
 
   return (
     <div className="bg-background border-t">
@@ -105,6 +109,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                 setValue('');
                 onCancelEdit?.();
               }}
+              aria-label="لغو ویرایش"
               className="hover:bg-muted cursor-pointer rounded-lg p-1 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
@@ -123,6 +128,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
             placeholder="پیام خود را بنویسید..."
             rows={1}
             disabled={isSending}
+            aria-label="پیام"
             className="placeholder:text-muted-foreground/50 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed focus:outline-none disabled:opacity-50"
             style={{ height: MIN_HEIGHT, minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
           />
@@ -136,6 +142,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
               onClick={send}
               disabled={!canSend}
               size="icon"
+              aria-label="ارسال پیام"
               className="h-9 w-9 rounded-xl shadow-none"
             >
               <Send className="h-4 w-4" />
@@ -154,7 +161,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
                 isOverLimit ? 'text-destructive font-medium' : 'text-muted-foreground'
               )}
             >
-              {value.length} / {MAX_LENGTH}
+              {value.length} / {MAX_MESSAGE_LENGTH}
             </motion.p>
           )}
         </AnimatePresence>

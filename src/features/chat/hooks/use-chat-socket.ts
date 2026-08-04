@@ -4,34 +4,45 @@ import { useSocket } from '@/shared/providers/socket-provider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReplyInfo, SocketMessage, TypingUser } from '../types';
 
+interface SendPayload {
+  content: string;
+  sender: { id: string; name: string; image: string | null };
+  replyTo?: ReplyInfo;
+  clientId: string;
+}
+
+interface SendAck {
+  message?: SocketMessage;
+  error?: string;
+}
+
 export function useChatSocket(roomId: string) {
   const { socket, isConnected } = useSocket();
-  const [messages, setMessages] = useState<SocketMessage[]>([]);
+  const [liveMessages, setLiveMessages] = useState<SocketMessage[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const joinedRef = useRef(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Single useEffect for all socket events
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    // Join room (only once)
     if (!joinedRef.current) {
       socket.emit('room:join', roomId);
       joinedRef.current = true;
     }
 
-    // Message handlers
     const onMessage = (msg: SocketMessage) => {
-      setMessages((prev) => [...prev, msg]);
+      setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
     };
 
     const onTypingStart = (data: TypingUser & { roomId: string }) => {
       if (data.roomId !== roomId) return;
-      setTypingUsers((prev) => {
-        if (prev.find((u) => u.userId === data.userId)) return prev;
-        return [...prev, { userId: data.userId, userName: data.userName }];
-      });
+      setTypingUsers((prev) =>
+        prev.some((u) => u.userId === data.userId)
+          ? prev
+          : [...prev, { userId: data.userId, userName: data.userName }]
+      );
     };
 
     const onTypingStop = (data: { userId: string; roomId: string }) => {
@@ -39,9 +50,7 @@ export function useChatSocket(roomId: string) {
       setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
     };
 
-    const onOnlineCount = (count: number) => {
-      setOnlineCount(count);
-    };
+    const onOnlineCount = (count: number) => setOnlineCount(count);
 
     socket.on('message:new', onMessage);
     socket.on('typing:user_started', onTypingStart);
@@ -54,34 +63,57 @@ export function useChatSocket(roomId: string) {
       socket.off('typing:user_stopped', onTypingStop);
       socket.off('room:online_count', onOnlineCount);
 
-      // Leave room
       socket.emit('room:leave', roomId);
       joinedRef.current = false;
-      setMessages([]);
+      setLiveMessages([]);
       setTypingUsers([]);
       setOnlineCount(0);
     };
   }, [socket, isConnected, roomId]);
 
+  useEffect(
+    () => () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    },
+    []
+  );
+
+  /**
+   * Sends a message through the socket, which is now the single source of
+   * truth for persistence (server writes to DB then broadcasts to the room,
+   * including the sender). Resolves with the persisted message or throws.
+   */
   const send = useCallback(
-    (
-      content: string,
-      sender: { id: string; name: string; image: string | null },
-      replyTo?: ReplyInfo
-    ) => {
-      if (!socket) return;
-      socket.emit('message:send', {
-        roomId,
-        content,
-        sender: {
-          userId: sender.id,
-          name: sender.name,
-          avatar: sender.image,
-        },
-        replyTo: replyTo || null,
+    (payload: SendPayload): Promise<SocketMessage> => {
+      return new Promise((resolve, reject) => {
+        if (!socket || !isConnected) {
+          reject(new Error('اتصال برقرار نیست'));
+          return;
+        }
+        socket.emit(
+          'message:send',
+          {
+            roomId,
+            content: payload.content,
+            sender: {
+              userId: payload.sender.id,
+              name: payload.sender.name,
+              avatar: payload.sender.image,
+            },
+            replyTo: payload.replyTo || null,
+            clientId: payload.clientId,
+          },
+          (ack: SendAck) => {
+            if (ack?.error || !ack?.message) {
+              reject(new Error(ack?.error || 'خطا در ارسال پیام'));
+              return;
+            }
+            resolve(ack.message);
+          }
+        );
       });
     },
-    [socket, roomId]
+    [socket, isConnected, roomId]
   );
 
   const startTyping = useCallback(() => {
@@ -92,5 +124,21 @@ export function useChatSocket(roomId: string) {
     socket?.emit('typing:stop', { roomId });
   }, [socket, roomId]);
 
-  return { messages, typingUsers, onlineCount, send, startTyping, stopTyping };
+  const registerUser = useCallback(
+    (user: { id: string; name: string; image: string | null }) => {
+      socket?.emit('register', { userId: user.id, name: user.name, avatar: user.image });
+    },
+    [socket]
+  );
+
+  return {
+    liveMessages,
+    typingUsers,
+    onlineCount,
+    send,
+    startTyping,
+    stopTyping,
+    registerUser,
+    isConnected,
+  };
 }

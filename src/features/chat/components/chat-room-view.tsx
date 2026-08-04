@@ -26,7 +26,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     isLoading,
     isError,
     sendMessage,
-    isSending,
+    retryMessage,
     typingUsers,
     startTyping,
     stopTyping,
@@ -35,6 +35,9 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     onlineCount,
     deleteMessage,
     updateMessage,
+    hasOlderMessages,
+    isLoadingOlder,
+    loadOlderMessages,
   } = useChat(chatRoom.id);
 
   const chatInputRef = useRef<ChatInputHandle>(null);
@@ -126,12 +129,16 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         onReplyClick={(messageId) => setScrollToMessageId(messageId)}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
+        onRetry={retryMessage}
+        hasOlderMessages={hasOlderMessages}
+        isLoadingOlder={isLoadingOlder}
+        onLoadOlder={loadOlderMessages}
       />
 
       <ChatInput
         ref={chatInputRef}
         onSend={handleSend}
-        isSending={isSending}
+        isSending={false}
         onStartTyping={startTyping}
         onStopTyping={stopTyping}
         editMessage={editingMessage}

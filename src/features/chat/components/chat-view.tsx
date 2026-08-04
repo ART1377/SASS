@@ -15,7 +15,7 @@ import { ChatRoomView } from './chat-room-view';
 export function ChatView() {
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
-  const { data: rooms = [], isLoading: isRoomsLoading } = useChatRooms();
+  const { data: rooms = [], isLoading: isRoomsLoading } = useChatRooms(undefined, selectedRoom?.id);
 
   const handleSelectRoom = (room: ChatRoom) => {
     setSelectedRoom(room);
@@ -70,13 +70,14 @@ export function ChatView() {
               <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">
                 <button
                   onClick={handleBack}
-                  className="hover:bg-muted cursor-pointer! rounded-lg p-1"
+                  aria-label="بازگشت به لیست چت‌ها"
+                  className="hover:bg-muted rounded-lg p-1"
                 >
                   <ArrowRight className="h-5 w-5" />
                 </button>
                 <span className="text-sm font-medium">{selectedRoom.name}</span>
               </div>
-              <ChatRoomView chatRoom={selectedRoom} />
+              <ChatRoomView chatRoom={selectedRoom} key={selectedRoom.id} />
             </>
           ) : (
             <EmptyState

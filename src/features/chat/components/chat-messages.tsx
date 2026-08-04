@@ -2,11 +2,12 @@
 
 import { EmptyState } from '@/shared/components/empty-state';
 import { AnimatePresence } from 'framer-motion';
-import { MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useMessageScroll } from '../hooks/use-message-scroll';
 import type { ChatMessage, MessageGroup, ReplyInfo, TypingUser } from '../types';
 import { ChatMessageSkeleton } from './chat-message-skeleton';
+import { DateSeparator, isDifferentDay } from './date-separator';
 import { MessageGroupBubble } from './message-group';
 import { ScrollButton } from './scroll-button';
 import { TypingIndicator } from './typing-indicator';
@@ -21,6 +22,10 @@ interface Props {
   onReplyClick?: (messageId: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onRetry?: (clientId: string) => void;
+  hasOlderMessages?: boolean;
+  isLoadingOlder?: boolean;
+  onLoadOlder?: () => void;
 }
 
 export function ChatMessages({
@@ -33,7 +38,13 @@ export function ChatMessages({
   onReplyClick,
   onEdit,
   onDelete,
+  onRetry,
+  hasOlderMessages,
+  isLoadingOlder,
+  onLoadOlder,
 }: Props) {
+  const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
+
   const {
     containerRef,
     bottomRef,
@@ -43,9 +54,13 @@ export function ChatMessages({
     handleScroll,
     scrollToBottom,
     scrollToMessage,
-  } = useMessageScroll(messages.length);
+  } = useMessageScroll(messages.length, {
+    onReachTop: onLoadOlder,
+    hasMore: hasOlderMessages,
+    isLoadingMore: isLoadingOlder,
+    isOwnLastMessage,
+  });
 
-  // Scroll to specific message when requested
   useEffect(() => {
     if (scrollToMessageId) {
       scrollToMessage(scrollToMessageId);
@@ -58,14 +73,14 @@ export function ChatMessages({
 
     for (const msg of messages) {
       const isOwn = msg.senderId === currentUserId;
-      if (
-        !currentGroup ||
-        currentGroup.senderId !== msg.senderId ||
-        (currentGroup.messages.length > 0 &&
-          new Date(msg.createdAt).getTime() -
-            new Date(currentGroup.messages[currentGroup.messages.length - 1].createdAt).getTime() >
-            5 * 60 * 1000)
-      ) {
+      const lastInGroup = currentGroup?.messages[currentGroup.messages.length - 1];
+      const sameDay = lastInGroup ? !isDifferentDay(msg.createdAt, lastInGroup.createdAt) : true;
+      const withinGap = lastInGroup
+        ? new Date(msg.createdAt).getTime() - new Date(lastInGroup.createdAt).getTime() <
+          5 * 60 * 1000
+        : true;
+
+      if (!currentGroup || currentGroup.senderId !== msg.senderId || !sameDay || !withinGap) {
         currentGroup = { senderId: msg.senderId, sender: msg.sender, messages: [], isOwn };
         groups.push(currentGroup);
       }
@@ -95,26 +110,44 @@ export function ChatMessages({
     );
   }
 
+  let lastRenderedDay: string | null = null;
+
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
       className="relative flex-1 space-y-4 overflow-y-auto p-4"
     >
+      {isLoadingOlder && (
+        <div className="flex justify-center py-2">
+          <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+        </div>
+      )}
+
       <AnimatePresence initial={false}>
-        {messageGroups.map((group, groupIndex) => (
-          <MessageGroupBubble
-            key={`${group.senderId}-${group.messages[0].id}`}
-            group={group}
-            isFirst={groupIndex === 0}
-            onReply={onReply}
-            highlightedId={highlightedId}
-            onSetRef={setMessageRef}
-            onReplyClick={onReplyClick}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
+        {messageGroups.map((group, groupIndex) => {
+          const firstMsg = group.messages[0];
+          const showSeparator =
+            !lastRenderedDay || isDifferentDay(firstMsg.createdAt, lastRenderedDay);
+          lastRenderedDay = firstMsg.createdAt;
+
+          return (
+            <div key={`${group.senderId}-${firstMsg.id}`}>
+              {showSeparator && <DateSeparator date={firstMsg.createdAt} />}
+              <MessageGroupBubble
+                group={group}
+                isFirst={groupIndex === 0}
+                onReply={onReply}
+                highlightedId={highlightedId}
+                onSetRef={setMessageRef}
+                onReplyClick={onReplyClick}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onRetry={onRetry}
+              />
+            </div>
+          );
+        })}
       </AnimatePresence>
 
       <AnimatePresence>

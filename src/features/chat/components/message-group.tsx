@@ -15,6 +15,7 @@ interface MessageGroupProps {
   onReplyClick?: (messageId: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onRetry?: (clientId: string) => void;
 }
 
 export function MessageGroupBubble({
@@ -26,6 +27,7 @@ export function MessageGroupBubble({
   onReplyClick,
   onEdit,
   onDelete,
+  onRetry,
 }: MessageGroupProps) {
   return (
     <motion.div
@@ -62,6 +64,7 @@ export function MessageGroupBubble({
             onReplyClick={onReplyClick}
             onEdit={onEdit}
             onDelete={onDelete}
+            onRetry={onRetry}
           />
         ))}
 

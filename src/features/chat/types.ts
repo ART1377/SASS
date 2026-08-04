@@ -26,6 +26,8 @@ export interface ReplyInfo {
   };
 }
 
+export type MessageStatus = 'sending' | 'sent' | 'failed';
+
 export interface ChatMessage {
   id: string;
   roomId: string;
@@ -34,11 +36,15 @@ export interface ChatMessage {
   replyToId?: string | null;
   replyTo?: ReplyInfo | null;
   createdAt: string;
+  editedAt?: string | null;
   sender: {
     id: string;
     name: string;
     avatar: string | null;
   };
+  /** Client-only fields, never persisted */
+  clientId?: string;
+  status?: MessageStatus;
 }
 
 export interface MessageGroup {
@@ -70,16 +76,14 @@ export interface ChatMember {
   isTyping?: boolean;
 }
 
-export interface SocketMessage {
-  id: string;
+/** Payload broadcast over the `message:new` socket event. */
+export interface SocketMessage extends ChatMessage {
+  clientId?: string;
+}
+
+/** Payload broadcast over the `room:updated` socket event, used to keep the room list live. */
+export interface RoomUpdatedPayload {
   roomId: string;
-  senderId: string;
-  content: string;
-  replyTo?: ReplyInfo | null;
-  createdAt: string;
-  sender: {
-    id: string;
-    name: string;
-    avatar: string | null;
-  };
+  lastMessage: ChatMessage;
+  isSender: boolean;
 }

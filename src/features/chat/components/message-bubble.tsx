@@ -2,6 +2,8 @@
 
 import { cn } from '@/shared/lib/utils';
 import { motion } from 'framer-motion';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import type { ChatMessage, ReplyInfo } from '../types';
 import { MessageActions } from './message-actions';
 
@@ -14,6 +16,7 @@ interface MessageBubbleProps {
   onDelete?: (messageId: string) => void;
   onReplyClick?: (messageId: string) => void;
   onSetRef: (id: string, el: HTMLDivElement | null) => void;
+  onRetry?: (clientId: string) => void;
 }
 
 export function MessageBubble({
@@ -25,14 +28,21 @@ export function MessageBubble({
   onDelete,
   onReplyClick,
   onSetRef,
+  onRetry,
 }: MessageBubbleProps) {
+  // Desktop relies on CSS hover to reveal actions; touch devices have no
+  // hover state, so tapping the bubble toggles the same actions explicitly.
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const isPending = message.status === 'sending' || message.status === 'failed';
+
   return (
     <motion.div
       ref={(el) => onSetRef(message.id, el)}
       layout
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: message.status === 'sending' ? 0.6 : 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      onClick={() => !isPending && setActionsOpen((v) => !v)}
       className={cn(
         'group/bubble relative w-fit max-w-[75%] rounded-2xl px-3.5 py-2 transition-colors duration-700',
         isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md',
@@ -42,7 +52,10 @@ export function MessageBubble({
       {/* Reply Preview */}
       {message.replyTo && (
         <button
-          onClick={() => onReplyClick?.(message.replyTo!.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReplyClick?.(message.replyTo!.id);
+          }}
           className={cn(
             'mb-1 block w-full cursor-pointer rounded-lg border-r-2 px-2 py-1 text-start text-xs transition-all hover:opacity-80 active:scale-[0.98]',
             isOwn
@@ -57,14 +70,46 @@ export function MessageBubble({
 
       <p className="text-[13px] leading-relaxed">{message.content}</p>
 
-      {/* Action buttons */}
-      <MessageActions
-        isOwn={isOwn}
-        message={message}
-        onReply={onReply}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
+      <div className="mt-0.5 flex items-center justify-end gap-1">
+        {message.editedAt && (
+          <span
+            className={cn(
+              'text-[10px]',
+              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/60'
+            )}
+          >
+            ویرایش شده
+          </span>
+        )}
+        {message.status === 'sending' && (
+          <Loader2 className="text-primary-foreground/70 h-3 w-3 animate-spin" />
+        )}
+        {message.status === 'failed' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (message.clientId) onRetry?.(message.clientId);
+            }}
+            className="text-destructive flex items-center gap-1 text-[10px] hover:underline"
+          >
+            <AlertCircle className="h-3 w-3" />
+            ارسال نشد، تلاش دوباره
+          </button>
+        )}
+      </div>
+
+      {/* Action buttons: hover on desktop, tap-toggle on touch */}
+      {!isPending && (
+        <MessageActions
+          isOwn={isOwn}
+          message={message}
+          onReply={onReply}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          forceVisible={actionsOpen}
+          onActionTaken={() => setActionsOpen(false)}
+        />
+      )}
     </motion.div>
   );
 }
