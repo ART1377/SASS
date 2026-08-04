@@ -6,14 +6,13 @@ import { BottomNav } from '@/shared/components/bottom-nav';
 import { MobileHeader } from '@/shared/components/mobile-header';
 import { PageTransition } from '@/shared/components/page-transition';
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar';
+import { ROUTES } from '@/shared/lib/routes';
 import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
-  if (!session?.user) {
-    redirect('/login');
-  }
+  if (!session?.user) redirect(ROUTES.LOGIN);
 
   return (
     <SidebarProvider>

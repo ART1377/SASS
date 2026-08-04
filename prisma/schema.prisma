@@ -152,6 +152,7 @@ model ChatMessage {
   sender  User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
   replyTo ChatMessage? @relation("Reply", fields: [replyToId], references: [id], onDelete: SetNull)
   replies ChatMessage[] @relation("Reply")
+  editedAt DateTime?
 }
 
 model ChatRoomMember {

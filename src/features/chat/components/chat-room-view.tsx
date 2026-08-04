@@ -1,23 +1,18 @@
 'use client';
 
+import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { ErrorState } from '@/shared/components/error-state';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/alert-dialog';
+import { Button } from '@/shared/components/ui/button';
 import { AnimatePresence } from 'framer-motion';
-import { Hash, Users } from 'lucide-react';
+import { CheckSquare, Hash, Users } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { chatApi } from '../api/chat-api';
 import { useChat } from '../hooks/use-chat';
 import type { ChatRoom, ReplyInfo } from '../types';
 import { ChatInput, type ChatInputHandle } from './chat-input';
 import { ChatMessages } from './chat-messages';
+import { ForwardDialog } from './forward-dialog';
 import { ReplyPreview } from './reply-preview';
 
 export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
@@ -47,6 +42,11 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     null
   );
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  // ─── Forward / multi‑select state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [forwardOpen, setForwardOpen] = useState(false);
 
   const handleEdit = useCallback((messageId: string, content: string) => {
     setEditingMessage({ id: messageId, content });
@@ -81,6 +81,53 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     [sendMessage, replyTo, editingMessage, updateMessage]
   );
 
+  // ─── Multi‑select handlers
+  const toggleSelect = useCallback((messageId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+        if (next.size === 0) setSelectMode(false);
+      } else {
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
+
+  const enterSelectMode = useCallback((messageId?: string) => {
+    setSelectMode(true);
+    if (messageId) {
+      setSelectedIds(new Set([messageId]));
+    }
+  }, []);
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  // ─── Forward: send each selected message to the chosen room via REST API
+  const handleForward = useCallback(
+    async (targetRoomId: string) => {
+      if (selectedIds.size === 0) return;
+
+      const msgsToForward = messages.filter((m) => selectedIds.has(m.id));
+      try {
+        for (const msg of msgsToForward) {
+          const prefix = `📨 از ${msg.sender.name}: `;
+          await chatApi.sendMessage(targetRoomId, prefix + msg.content);
+        }
+        toast.success(`${msgsToForward.length} پیام ارسال شد`);
+      } catch {
+        toast.error('خطا در ارسال پیام‌ها');
+      }
+
+      exitSelectMode();
+    },
+    [selectedIds, messages, exitSelectMode]
+  );
+
   if (isError) {
     return (
       <ErrorState
@@ -107,6 +154,16 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
             {chatRoom._count?.members ?? 0} عضو • {onlineCount} آنلاین
           </p>
         </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => setSelectMode((prev) => !prev)}
+          aria-label="انتخاب پیام"
+        >
+          <CheckSquare className="h-4 w-4" />
+        </Button>
       </div>
 
       <AnimatePresence>
@@ -133,37 +190,51 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         hasOlderMessages={hasOlderMessages}
         isLoadingOlder={isLoadingOlder}
         onLoadOlder={loadOlderMessages}
+        selectMode={selectMode}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onLongPress={enterSelectMode}
       />
 
-      <ChatInput
-        ref={chatInputRef}
-        onSend={handleSend}
-        isSending={false}
-        onStartTyping={startTyping}
-        onStopTyping={stopTyping}
-        editMessage={editingMessage}
-        onCancelEdit={() => setEditingMessage(null)}
+      {selectMode ? (
+        <div className="bg-background flex items-center gap-3 border-t px-4 py-3">
+          <Button variant="ghost" size="sm" onClick={exitSelectMode}>
+            لغو
+          </Button>
+          <span className="text-muted-foreground flex-1 text-center text-sm">
+            {selectedIds.size} انتخاب شده
+          </span>
+          <Button size="sm" onClick={() => setForwardOpen(true)} disabled={selectedIds.size === 0}>
+            <CheckSquare className="ml-2 h-4 w-4" />
+            ارسال
+          </Button>
+        </div>
+      ) : (
+        <ChatInput
+          ref={chatInputRef}
+          onSend={handleSend}
+          isSending={false}
+          onStartTyping={startTyping}
+          onStopTyping={stopTyping}
+          editMessage={editingMessage}
+          onCancelEdit={() => setEditingMessage(null)}
+        />
+      )}
+
+      <ForwardDialog
+        open={forwardOpen}
+        onOpenChange={setForwardOpen}
+        onForward={handleForward}
+        count={selectedIds.size}
       />
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>حذف پیام</AlertDialogTitle>
-            <AlertDialogDescription>
-              از حذف این پیام مطمئن هستید؟ این عمل قابل بازگشت نیست.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>انصراف</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              حذف
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+        title="حذف پیام"
+        description="از حذف این پیام مطمئن هستید؟ این عمل قابل بازگشت نیست."
+        onConfirm={handleDeleteConfirm}
+      />
     </>
   );
 }

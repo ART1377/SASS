@@ -1,5 +1,7 @@
 import { auth } from '@/features/auth/auth-config';
+import { TASK_STATUS_LABELS } from '@/shared/lib/constants';
 import { prisma } from '@/shared/lib/prisma';
+import { sendSSENotification } from '@/shared/lib/sse';
 import { NextResponse } from 'next/server';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +15,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     const { title, description, status, priority, assigneeId, dueDate } = body;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = {};
 
     if (title !== undefined) data.title = title;
@@ -23,24 +24,75 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (assigneeId !== undefined) data.assigneeId = assigneeId || null;
     if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
 
+    // Get old task to compare changes
+    const oldTask = await prisma.task.findUnique({
+      where: { id },
+      select: { title: true, status: true, assigneeId: true, project: { select: { name: true } } },
+    });
+
     const task = await prisma.task.update({
       where: { id },
       data,
       include: {
-        assignee: {
-          select: { id: true, name: true, avatar: true },
-        },
-        creator: {
-          select: { id: true, name: true, avatar: true },
-        },
-        project: {
-          select: { id: true, name: true },
-        },
-        _count: {
-          select: { comments: true },
-        },
+        assignee: { select: { id: true, name: true, avatar: true } },
+        creator: { select: { id: true, name: true, avatar: true } },
+        project: { select: { id: true, name: true } },
+        _count: { select: { comments: true } },
       },
     });
+
+    // ─── Notification: Status changed ───
+    if (
+      status &&
+      oldTask &&
+      status !== oldTask.status &&
+      oldTask.assigneeId &&
+      oldTask.assigneeId !== session.user.id
+    ) {
+      const statusLabel = TASK_STATUS_LABELS[status] || status;
+
+      await prisma.notification.create({
+        data: {
+          userId: oldTask.assigneeId,
+          title: 'بروزرسانی تسک',
+          message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+          type: 'TASK_UPDATED',
+        },
+      });
+
+      sendSSENotification({
+        userId: oldTask.assigneeId,
+        type: 'TASK_UPDATED',
+        title: 'بروزرسانی تسک',
+        message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+        data: { taskId: id, projectId: task.projectId },
+      });
+    }
+
+    // ─── Notification: New assignee ───
+    if (
+      assigneeId &&
+      oldTask &&
+      assigneeId !== oldTask.assigneeId &&
+      assigneeId !== session.user.id
+    ) {
+      await prisma.notification.create({
+        data: {
+          userId: assigneeId,
+          title: 'تسک جدید',
+          message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+          type: 'TASK_ASSIGNED',
+        },
+      });
+
+      sendSSENotification({
+        userId: assigneeId,
+        type: 'TASK_ASSIGNED',
+        title: 'تسک جدید',
+        message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+        data: { projectId: task.projectId, taskId: task.id },
+      });
+    }
 
     return NextResponse.json(task);
   } catch (error) {

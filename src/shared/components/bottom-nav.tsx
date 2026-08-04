@@ -1,46 +1,48 @@
 'use client';
 
+import { useNotifications } from '@/features/notifications/hooks/use-notifications';
+import { ROUTES } from '@/shared/lib/routes';
 import { cn } from '@/shared/lib/utils';
 import { Bell, CheckSquare, FolderKanban, LayoutDashboard, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const navItems = [
-  {
-    title: 'داشبورد',
-    icon: LayoutDashboard,
-    href: '/dashboard',
-  },
-  {
-    title: 'پروژه‌ها',
-    icon: FolderKanban,
-    href: '/projects',
-  },
-  {
-    title: 'تسک‌ها',
-    icon: CheckSquare,
-    href: '/tasks',
-    badge: '۳',
-  },
-  {
-    title: 'چت',
-    icon: MessageSquare,
-    href: '/chat',
-    badge: '۵',
-  },
-  {
-    title: 'اعلان‌ها',
-    icon: Bell,
-    href: '/notifications',
-    badge: '۲',
-  },
-];
-
 export function BottomNav() {
   const pathname = usePathname();
+  const { unreadCount: notificationCount } = useNotifications();
+
+  // TODO: Get real counts from hooks when available
+  const navItems = [
+    {
+      title: 'داشبورد',
+      icon: LayoutDashboard,
+      href: ROUTES.DASHBOARD,
+    },
+    {
+      title: 'پروژه‌ها',
+      icon: FolderKanban,
+      href: ROUTES.PROJECTS,
+    },
+    {
+      title: 'تسک‌ها',
+      icon: CheckSquare,
+      href: ROUTES.TASKS,
+    },
+    {
+      title: 'چت',
+      icon: MessageSquare,
+      href: ROUTES.CHAT,
+    },
+    {
+      title: 'اعلان‌ها',
+      icon: Bell,
+      href: ROUTES.NOTIFICATIONS,
+      badge: notificationCount || undefined,
+    },
+  ];
 
   return (
-    <nav className="bg-background/80 safe-area-bottom fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-xl md:hidden">
+    <nav className="safe-area-bottom bg-background/80 fixed right-0 bottom-0 left-0 z-50 border-t backdrop-blur-xl md:hidden">
       <div className="flex h-16 items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -59,9 +61,9 @@ export function BottomNav() {
                   className={cn('h-5 w-5 transition-all duration-200', isActive && 'scale-110')}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
-                {item.badge && (
+                {item.badge && item.badge > 0 && (
                   <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-sm">
-                    {item.badge}
+                    {item.badge > 99 ? '99+' : item.badge}
                   </span>
                 )}
               </div>

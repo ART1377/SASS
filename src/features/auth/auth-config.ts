@@ -1,4 +1,5 @@
 import { prisma } from '@/shared/lib/prisma';
+import { ROUTES } from '@/shared/lib/routes';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { compare } from 'bcryptjs';
 import type { NextAuthConfig } from 'next-auth';
@@ -11,8 +12,8 @@ export const authConfig: NextAuthConfig = {
     strategy: 'jwt',
   },
   pages: {
-    signIn: '/login',
-    newUser: '/register',
+    signIn: ROUTES.LOGIN,
+    newUser: ROUTES.REGISTER,
   },
   providers: [
     CredentialsProvider({

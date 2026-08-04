@@ -28,7 +28,7 @@ export function DateSeparator({ date }: { date: string }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="sticky top-0 z-[1] flex items-center justify-center py-2"
+      className="sticky top-0 z-1 flex items-center justify-center py-2"
     >
       <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-[11px] font-medium shadow-sm">
         {formatSeparatorLabel(date)}

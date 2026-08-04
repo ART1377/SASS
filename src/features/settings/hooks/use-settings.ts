@@ -2,6 +2,7 @@
 
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
+import { ROUTES } from '@/shared/lib/routes';
 import { signOut } from 'next-auth/react';
 import { settingsApi } from '../api/settings-api';
 import type { EmailFormData, PasswordFormData, ProfileFormData } from '../validations';
@@ -27,7 +28,7 @@ export function useChangeEmail() {
     onSuccess: () => {
       // Sign out after email change
       setTimeout(() => {
-        signOut({ callbackUrl: '/login' });
+        signOut({ callbackUrl: ROUTES.LOGIN });
       }, 2000);
     },
   });

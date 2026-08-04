@@ -1,5 +1,6 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
+import { sendSSENotification } from '@/shared/lib/sse';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -52,7 +53,6 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-
     const { title, description, priority, projectId, assigneeId, dueDate } = body;
 
     if (!title || !projectId) {
@@ -84,6 +84,26 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // ─── Send notification if task is assigned to someone else ───
+    if (assigneeId && assigneeId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          userId: assigneeId,
+          title: 'تسک جدید',
+          message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+          type: 'TASK_ASSIGNED',
+        },
+      });
+
+      sendSSENotification({
+        userId: assigneeId,
+        type: 'TASK_ASSIGNED',
+        title: 'تسک جدید',
+        message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+        data: { projectId, taskId: task.id },
+      });
+    }
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {

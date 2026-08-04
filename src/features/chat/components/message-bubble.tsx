@@ -17,6 +17,11 @@ interface MessageBubbleProps {
   onReplyClick?: (messageId: string) => void;
   onSetRef: (id: string, el: HTMLDivElement | null) => void;
   onRetry?: (clientId: string) => void;
+  // ─── Forward props ──────────────────────────
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  onLongPress?: (id: string) => void;
 }
 
 export function MessageBubble({
@@ -29,9 +34,11 @@ export function MessageBubble({
   onReplyClick,
   onSetRef,
   onRetry,
+  selectMode,
+  isSelected,
+  onToggleSelect,
+  onLongPress,
 }: MessageBubbleProps) {
-  // Desktop relies on CSS hover to reveal actions; touch devices have no
-  // hover state, so tapping the bubble toggles the same actions explicitly.
   const [actionsOpen, setActionsOpen] = useState(false);
   const isPending = message.status === 'sending' || message.status === 'failed';
 
@@ -42,13 +49,52 @@ export function MessageBubble({
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: message.status === 'sending' ? 0.6 : 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      onClick={() => !isPending && setActionsOpen((v) => !v)}
+      onClick={() => {
+        if (selectMode) {
+          onToggleSelect?.(message.id);
+        } else if (!isPending) {
+          setActionsOpen((v) => !v);
+        }
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (!selectMode) onLongPress?.(message.id);
+      }}
       className={cn(
         'group/bubble relative w-fit max-w-[75%] rounded-2xl px-3.5 py-2 transition-colors duration-700',
         isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md',
         isHighlighted && 'bg-primary/20'
       )}
     >
+      {/* Selection checkbox (visible only in select mode) */}
+      {selectMode && (
+        <div
+          className={cn(
+            'absolute top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors',
+            isSelected
+              ? 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/30 bg-background',
+            isOwn ? 'left-2' : 'right-2'
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect?.(message.id);
+          }}
+        >
+          {isSelected && (
+            <svg
+              className="h-3 w-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      )}
+
       {/* Reply Preview */}
       {message.replyTo && (
         <button
@@ -98,8 +144,8 @@ export function MessageBubble({
         )}
       </div>
 
-      {/* Action buttons: hover on desktop, tap-toggle on touch */}
-      {!isPending && (
+      {/* Action buttons (hidden in select mode) */}
+      {!isPending && !selectMode && (
         <MessageActions
           isOwn={isOwn}
           message={message}

@@ -2,7 +2,8 @@
 
 import { cn } from '@/shared/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Pencil, Reply, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Reply, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { ChatMessage, ReplyInfo } from '../types';
 
 interface MessageActionsProps {
@@ -11,7 +12,6 @@ interface MessageActionsProps {
   onReply: (message: ReplyInfo) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
-  /** Controlled visibility for touch devices, where there is no hover state. */
   forceVisible?: boolean;
   onActionTaken?: () => void;
 }
@@ -34,6 +34,16 @@ export function MessageActions({
   forceVisible,
   onActionTaken,
 }: MessageActionsProps) {
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      toast.success('پیام کپی شد');
+    } catch {
+      toast.error('خطا در کپی پیام');
+    }
+    onActionTaken?.();
+  };
+
   return (
     <AnimatePresence>
       {(forceVisible ?? true) && (
@@ -44,14 +54,30 @@ export function MessageActions({
           className={cn(
             'absolute top-0 flex items-center gap-1.5 transition-opacity duration-200',
             isOwn ? '-left-28' : '-right-10',
-            // Desktop: reveal on hover. Touch: controlled by `forceVisible`.
             forceVisible ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'
           )}
         >
-          {/* Reply */}
+          {/* Copy */}
           <motion.button
             variants={actionVariants}
             transition={{ delay: 0 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy();
+            }}
+            aria-label="کپی پیام"
+            className={cn(
+              actionButtonBase,
+              'bg-background text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/30'
+            )}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </motion.button>
+
+          {/* Reply */}
+          <motion.button
+            variants={actionVariants}
+            transition={{ delay: 0.03 }}
             onClick={(e) => {
               e.stopPropagation();
               onReply({
@@ -73,7 +99,7 @@ export function MessageActions({
           {isOwn && (
             <motion.button
               variants={actionVariants}
-              transition={{ delay: 0.05 }}
+              transition={{ delay: 0.06 }}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(message.id, message.content);
@@ -92,7 +118,7 @@ export function MessageActions({
           {isOwn && (
             <motion.button
               variants={actionVariants}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.09 }}
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete?.(message.id);

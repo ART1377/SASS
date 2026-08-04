@@ -15,10 +15,6 @@ export const chatApi = {
     return response.data;
   },
 
-  /**
-   * Fetches a page of messages, newest-first pagination via `before` cursor.
-   * `messages` is returned in ascending (chronological) order, ready to render.
-   */
   getMessages: async (
     roomId: string,
     before?: string,
@@ -35,6 +31,19 @@ export const chatApi = {
       projectId,
       name,
       type: 'GROUP',
+    });
+    return response.data;
+  },
+
+  /** Send a message via REST (used for forwarding and fallback). */
+  sendMessage: async (
+    roomId: string,
+    content: string,
+    replyToId?: string
+  ): Promise<ChatMessage> => {
+    const response = await apiClient.post<ChatMessage>(`/chat/rooms/${roomId}/messages`, {
+      content,
+      replyToId: replyToId || undefined,
     });
     return response.data;
   },

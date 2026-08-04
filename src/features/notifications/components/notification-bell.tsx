@@ -2,6 +2,7 @@
 
 import { Button } from '@/shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { ROUTES } from '@/shared/lib/routes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
 import Link from 'next/link';
@@ -14,6 +15,8 @@ export function NotificationBell() {
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   const recentNotifications = notifications.slice(0, 5);
+
+  const handleClose = () => setOpen(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -61,15 +64,21 @@ export function NotificationBell() {
               <NotificationItem
                 key={notification.id}
                 notification={notification}
-                onClose={() => setOpen(false)}
+                onClose={handleClose}
               />
             ))
           )}
         </div>
         {notifications.length > 5 && (
           <div className="border-t p-2 text-center">
-            <Button variant="ghost" size="sm" className="w-full text-xs" asChild>
-              <Link href="/notifications">مشاهده همه اعلان‌ها</Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full cursor-pointer text-xs"
+              asChild
+              onClick={handleClose}
+            >
+              <Link href={ROUTES.NOTIFICATIONS}>مشاهده همه اعلان‌ها</Link>
             </Button>
           </div>
         )}

@@ -49,16 +49,23 @@ export function ProjectsList() {
 
   if (projects.length === 0) {
     return (
-      <EmptyState
-        icon={FolderKanban}
-        title="پروژه‌ای یافت نشد"
-        description="هنوز هیچ پروژه‌ای ایجاد نکرده‌اید"
-        action={
-          <Button onClick={() => setCreateOpen(true)} className="shadow-primary/20 gap-2 shadow-lg">
-            <Plus className="h-4 w-4" /> ایجاد اولین پروژه
-          </Button>
-        }
-      />
+      <>
+        <EmptyState
+          icon={FolderKanban}
+          title="پروژه‌ای یافت نشد"
+          description="هنوز هیچ پروژه‌ای ایجاد نکرده‌اید"
+          action={
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="shadow-primary/20 gap-2 shadow-lg"
+            >
+              <Plus className="h-4 w-4" /> ایجاد اولین پروژه
+            </Button>
+          }
+        />
+        {/* Always render the dialog, controlled by open prop */}
+        <ProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
+      </>
     );
   }
 
@@ -81,7 +88,7 @@ export function ProjectsList() {
       )}
 
       {filteredProjects.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
             {filteredProjects.map((project, index) => (
               <motion.div
@@ -97,7 +104,7 @@ export function ProjectsList() {
                   onEdit={setEditingProject}
                   onDeleteRequest={setDeletingProjectId}
                   onInvite={(id) => {
-                    const p = projects.find((p) => p.id === id);
+                    const p = projects.find((proj) => proj.id === id);
                     if (p) setInviteTarget({ id, name: p.name });
                   }}
                 />
@@ -107,7 +114,7 @@ export function ProjectsList() {
         </div>
       )}
 
-      {/* Create / Edit Dialog */}
+      {/* Create / Edit Dialogs (always mounted) */}
       <ProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
       {editingProject && (
         <ProjectDialog

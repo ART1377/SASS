@@ -16,6 +16,11 @@ interface MessageGroupProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onRetry?: (clientId: string) => void;
+  // ─── Forward props ────────────────────────
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onLongPress?: (id: string) => void;
 }
 
 export function MessageGroupBubble({
@@ -28,6 +33,10 @@ export function MessageGroupBubble({
   onEdit,
   onDelete,
   onRetry,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+  onLongPress,
 }: MessageGroupProps) {
   return (
     <motion.div
@@ -65,6 +74,11 @@ export function MessageGroupBubble({
             onEdit={onEdit}
             onDelete={onDelete}
             onRetry={onRetry}
+            // ─── Forward props ──────────────
+            selectMode={selectMode}
+            isSelected={selectedIds?.has(msg.id)}
+            onToggleSelect={onToggleSelect}
+            onLongPress={onLongPress}
           />
         ))}
 

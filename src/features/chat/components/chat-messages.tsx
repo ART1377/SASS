@@ -26,6 +26,11 @@ interface Props {
   hasOlderMessages?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
+  // ─── Forward / multi‑select props ──────────
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onLongPress?: (id: string) => void;
 }
 
 export function ChatMessages({
@@ -42,6 +47,10 @@ export function ChatMessages({
   hasOlderMessages,
   isLoadingOlder,
   onLoadOlder,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+  onLongPress,
 }: Props) {
   const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
 
@@ -144,6 +153,11 @@ export function ChatMessages({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onRetry={onRetry}
+                // ─── Forward props ────────────
+                selectMode={selectMode}
+                selectedIds={selectedIds}
+                onToggleSelect={onToggleSelect}
+                onLongPress={onLongPress}
               />
             </div>
           );
