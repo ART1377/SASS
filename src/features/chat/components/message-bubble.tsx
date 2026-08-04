@@ -34,7 +34,7 @@ export function MessageBubble({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       className={cn(
-        'group/bubble relative rounded-2xl px-3.5 py-2 transition-colors duration-700',
+        'group/bubble relative w-fit max-w-[75%] rounded-2xl px-3.5 py-2 transition-colors duration-700',
         isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md',
         isHighlighted && 'bg-primary/20'
       )}

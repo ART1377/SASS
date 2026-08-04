@@ -680,12 +680,8 @@ body,
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--muted) 25%,
-    var(--muted-foreground) 37%,
-    var(--muted) 63%
-  );
-  background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+a{
+  cursor: pointer;
 }

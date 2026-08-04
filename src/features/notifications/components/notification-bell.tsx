@@ -18,7 +18,7 @@ export function NotificationBell() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="اعلان‌ها">
-          <Bell className="h-5 w-5" aria-hidden="true" />
+          <Bell className="text-primary h-5 w-5" aria-hidden="true" />
           <AnimatePresence mode="wait">
             {unreadCount > 0 && (
               <motion.span

@@ -59,7 +59,7 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
               key={room.id}
               onClick={() => onSelectRoom(room)}
               className={cn(
-                'flex w-full items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
+                'flex w-full cursor-pointer! items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
                 selectedRoom?.id === room.id
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

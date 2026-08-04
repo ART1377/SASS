@@ -44,7 +44,9 @@ export function MessageGroupBubble({
         </Avatar>
       )}
 
-      <div className={cn('max-w-[75%] space-y-1', group.isOwn ? 'items-end' : 'items-start')}>
+      <div
+        className={cn('flex w-full flex-col space-y-1', group.isOwn ? 'items-start' : 'items-end')}
+      >
         {!group.isOwn && (
           <p className="text-muted-foreground px-1 text-[10px] font-medium">{group.sender.name}</p>
         )}
