@@ -1,13 +1,12 @@
+'use client';
+
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { projectsApi } from '../api/projects-api';
 import type { UpdateProjectInput } from '../types';
 
 export function useProjects() {
-  const queryClient = useQueryClient();
-
   const projectsQuery = useQuery({
     queryKey: queryKeys.projects.all,
     queryFn: projectsApi.getAll,
@@ -35,17 +34,12 @@ export function useProjects() {
     errorMessage: 'خطا در حذف پروژه',
   });
 
-  const inviteMemberMutation = useMutation({
+  const inviteMemberMutation = useMutationWithToast({
     mutationFn: ({ projectId, email }: { projectId: string; email: string }) =>
       projectsApi.inviteMember(projectId, email),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(variables.projectId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
-      toast.success('عضو با موفقیت دعوت شد');
-    },
-    onError: (error: { response?: { data?: { error?: string } } }) => {
-      toast.error(error?.response?.data?.error || 'خطا در دعوت عضو');
-    },
+    queryKey: queryKeys.projects.all, // also invalidates members
+    successMessage: 'عضو با موفقیت دعوت شد',
+    errorMessage: 'خطا در دعوت عضو',
   });
 
   return {

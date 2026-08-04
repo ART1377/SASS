@@ -529,10 +529,10 @@
 @keyframes pulse-glow {
   0%,
   100% {
-    box-shadow: 0 0 20px var(--primary);
+    box-shadow: 0 0 10px var(--primary);
   }
   50% {
-    box-shadow: 0 0 30px var(--primary);
+    box-shadow: 0 0 20px var(--primary);
   }
 }
 

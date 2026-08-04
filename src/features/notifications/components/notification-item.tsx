@@ -1,6 +1,5 @@
 'use client';
 
-import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { cn, formatDateTime } from '@/shared/lib/utils';
 import { NOTIFICATION_COLORS, NOTIFICATION_ICONS, NOTIFICATION_LABELS } from '../constants';
 import { useNotifications } from '../hooks/use-notifications';
@@ -32,9 +31,13 @@ export function NotificationItem({ notification, onClose }: NotificationItemProp
         !notification.isRead && 'bg-primary/5'
       )}
     >
-      <span className="text-muted-foreground/70 text-[10px]">
-        <StatusBadge status={notification.type} label={label} size="xs" />
-      </span>
+      {/* Icon */}
+      <div
+        className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', colorClass)}
+      >
+        <Icon className="h-4 w-4" />
+      </div>
+
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium">{notification.title}</p>

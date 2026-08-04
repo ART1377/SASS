@@ -1,8 +1,7 @@
 'use client';
 
 import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
-import { Button } from '@/shared/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
+import { Dialog, DialogContent } from '@/shared/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -15,7 +14,6 @@ import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
 import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, UserPlus } from 'lucide-react';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProjects } from '../hooks/use-projects';
 import { inviteMemberSchema, type InviteMemberFormData } from '../validations';
@@ -23,27 +21,21 @@ import { inviteMemberSchema, type InviteMemberFormData } from '../validations';
 interface InviteMemberDialogProps {
   projectId: string;
   projectName: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function InviteMemberDialog({
   projectId,
   projectName,
-  open: controlledOpen,
-  onOpenChange: controlledOnOpenChange,
+  open,
+  onOpenChange,
 }: InviteMemberDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
   const { inviteMember, isInviting } = useProjects();
-
-  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setOpen = controlledOnOpenChange || setInternalOpen;
 
   const form = useForm<InviteMemberFormData>({
     resolver: zodResolver(inviteMemberSchema),
-    defaultValues: {
-      email: '',
-    },
+    defaultValues: { email: '' },
   });
 
   function onSubmit(data: InviteMemberFormData) {
@@ -52,27 +44,19 @@ export function InviteMemberDialog({
       {
         onSuccess: () => {
           form.reset();
-          setOpen(false);
+          onOpenChange(false);
         },
       }
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      {controlledOpen === undefined && (
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            دعوت عضو
-          </Button>
-        </DialogTrigger>
-      )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-100">
         <DialogHeaderWithIcon
           icon={UserPlus}
-          title={`دعوت عضو به پروژه ${projectName}`}
-          description="با وارد کردن ایمیل کاربر، او را به پروژه دعوت کنید"
+          title={`دعوت عضو به ${projectName}`}
+          description="ایمیل کاربر مورد نظر را وارد کنید"
         />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -81,7 +65,7 @@ export function InviteMemberDialog({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ایمیل کاربر</FormLabel>
+                  <FormLabel>ایمیل</FormLabel>
                   <FormControl>
                     <InputWithIcon
                       icon={Mail}

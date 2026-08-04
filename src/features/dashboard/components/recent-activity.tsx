@@ -1,3 +1,4 @@
+import { EmptyState } from '@/shared/components/empty-state';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import {
   Card,
@@ -9,6 +10,7 @@ import {
 import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { TASK_STATUS_LABELS } from '@/shared/lib/constants';
 import { formatDateTime, getInitials } from '@/shared/lib/utils';
+import { Activity } from 'lucide-react';
 import type { DashboardStats } from '../types';
 
 interface RecentActivityProps {
@@ -23,8 +25,13 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           <CardTitle className="text-lg">فعالیت‌های اخیر</CardTitle>
           <CardDescription>فعالیتی برای نمایش وجود ندارد</CardDescription>
         </CardHeader>
-        <CardContent className="text-muted-foreground flex items-center justify-center py-8 text-sm">
-          با ایجاد و بروزرسانی تسک‌ها، فعالیت‌ها اینجا نمایش داده می‌شوند
+        <CardContent>
+          <EmptyState
+            icon={Activity}
+            title="فعالیتی برای نمایش وجود ندارد"
+            description="با ایجاد و بروزرسانی تسک‌ها، فعالیت‌ها اینجا نمایش داده می‌شوند"
+            className="py-8"
+          />
         </CardContent>
       </Card>
     );

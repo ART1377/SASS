@@ -74,7 +74,7 @@ export function SearchInput({
         <div className="absolute inset-y-0 left-0 flex items-center gap-1 pl-3">
           <button
             onClick={handleClear}
-            className="text-muted-foreground/40 hover:text-muted-foreground cursor-pointer rounded-lg p-1 transition-colors"
+            className="text-muted-foreground/40 hover:text-muted-foreground hover:bg-primary/10 cursor-pointer! rounded-lg p-1 transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>

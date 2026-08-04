@@ -8,7 +8,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/components/ui/form';
-import { Input } from '@/shared/components/ui/input';
+import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
 import { PasswordInput } from '@/shared/components/ui/password-input';
 import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,16 +52,13 @@ export function EmailForm({ currentEmail }: EmailFormProps) {
             <FormItem>
               <FormLabel>ایمیل جدید</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input
-                    type="email"
-                    placeholder="newemail@example.com"
-                    disabled={changeEmailMutation.isPending}
-                    className="pr-10"
-                    {...field}
-                  />
-                  <Mail className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
-                </div>
+                <InputWithIcon
+                  icon={Mail}
+                  type="email"
+                  placeholder="newemail@example.com"
+                  disabled={changeEmailMutation.isPending}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

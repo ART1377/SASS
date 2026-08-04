@@ -1,3 +1,4 @@
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   Card,
   CardContent,
@@ -29,9 +30,13 @@ export function UpcomingDeadlines({ deadlines }: UpcomingDeadlinesProps) {
           <CardTitle className="text-lg">موعدهای نزدیک</CardTitle>
           <CardDescription>موعدی برای ۷ روز آینده وجود ندارد</CardDescription>
         </CardHeader>
-        <CardContent className="text-muted-foreground flex items-center justify-center py-8 text-sm">
-          <Calendar className="mr-2 h-8 w-8 opacity-20" />
-          همه تسک‌ها به‌روز هستند
+        <CardContent>
+          <EmptyState
+            icon={Calendar}
+            title="موعدی نزدیک نیست"
+            description="همه تسک‌ها به‌روز هستند"
+            className="py-8"
+          />
         </CardContent>
       </Card>
     );

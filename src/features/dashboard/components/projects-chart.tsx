@@ -1,5 +1,6 @@
 'use client';
 
+import { EmptyState } from '@/shared/components/empty-state';
 import {
   Card,
   CardContent,
@@ -8,6 +9,7 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import ReactECharts from 'echarts-for-react';
+import { BarChart3 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import type { DashboardStats } from '../types';
 
@@ -26,8 +28,13 @@ export function ProjectsChart({ projectStats }: ProjectsChartProps) {
           <CardTitle className="text-lg">آمار پروژه‌ها</CardTitle>
           <CardDescription>داده‌ای برای نمایش وجود ندارد</CardDescription>
         </CardHeader>
-        <CardContent className="text-muted-foreground flex h-75 items-center justify-center">
-          پس از ایجاد پروژه و تسک، نمودار اینجا نمایش داده می‌شود
+        <CardContent>
+          <EmptyState
+            icon={BarChart3}
+            title="داده‌ای برای نمایش وجود ندارد"
+            description="پس از ایجاد پروژه و تسک، نمودار اینجا نمایش داده می‌شود"
+            className="py-8"
+          />
         </CardContent>
       </Card>
     );

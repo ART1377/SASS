@@ -4,6 +4,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useNotifications } from '../hooks/use-notifications';
 import { NotificationItem } from './notification-item';
@@ -68,7 +69,7 @@ export function NotificationBell() {
         {notifications.length > 5 && (
           <div className="border-t p-2 text-center">
             <Button variant="ghost" size="sm" className="w-full text-xs" asChild>
-              <a href="/notifications">مشاهده همه اعلان‌ها</a>
+              <Link href="/notifications">مشاهده همه اعلان‌ها</Link>
             </Button>
           </div>
         )}

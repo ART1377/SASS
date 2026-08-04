@@ -8,7 +8,7 @@ interface AnimatedNumberProps {
 }
 
 export function AnimatedNumber({ value }: AnimatedNumberProps) {
-  const spring = useSpring(0, { stiffness: 20, damping: 10 });
+  const spring = useSpring(0, { stiffness: 80, damping: 20 }); // more responsive
 
   useEffect(() => {
     spring.set(value);

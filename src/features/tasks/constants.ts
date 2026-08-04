@@ -13,17 +13,3 @@ export const KANBAN_COLUMNS = [
   { id: 'REVIEW', title: 'در بازبینی', color: 'bg-orange-500', borderColor: 'border-orange-500' },
   { id: 'DONE', title: 'انجام شده', color: 'bg-emerald-500', borderColor: 'border-emerald-500' },
 ] as const;
-
-export const PRIORITY_COLORS = {
-  LOW: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-  MEDIUM: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  HIGH: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  URGENT: 'bg-red-500/10 text-red-500 border-red-500/20',
-} as const;
-
-export const PRIORITY_DOT_COLORS = {
-  LOW: 'bg-gray-400',
-  MEDIUM: 'bg-blue-400',
-  HIGH: 'bg-orange-400',
-  URGENT: 'bg-red-400',
-} as const;

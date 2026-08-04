@@ -17,6 +17,8 @@ interface KanbanColumnProps {
   onDrop: () => void;
   draggedTask: Task | null;
   onDragStart: (task: Task) => void;
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 export function KanbanColumn({
@@ -25,6 +27,8 @@ export function KanbanColumn({
   onDrop,
   draggedTask,
   onDragStart,
+  onEditTask,
+  onDeleteTask,
 }: KanbanColumnProps) {
   const isTarget = draggedTask && draggedTask.status !== column.id;
 
@@ -70,7 +74,13 @@ export function KanbanColumn({
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
                 transition={{ type: 'spring', stiffness: 500, damping: 20 }}
               >
-                <TaskCard task={task} onDragStart={onDragStart} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onDragStart={onDragStart}
+                  onEdit={onEditTask}
+                  onDelete={onDeleteTask}
+                />
               </motion.div>
             ))
           )}

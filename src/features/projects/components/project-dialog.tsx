@@ -15,46 +15,65 @@ import { Input } from '@/shared/components/ui/input';
 import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FolderKanban, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { FolderKanban, Pencil, Plus } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProjects } from '../hooks/use-projects';
+import type { Project } from '../types';
 import { createProjectSchema, type CreateProjectFormData } from '../validations';
 
-export function CreateProjectDialog() {
-  const [open, setOpen] = useState(false);
-  const { createProject, isCreating } = useProjects();
+interface ProjectDialogProps {
+  project?: Project;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}
+
+export function ProjectDialog({ project, open, onOpenChange, trigger }: ProjectDialogProps) {
+  const { createProject, isCreating, updateProject, isUpdating } = useProjects();
+  const isEditing = !!project;
+  const isLoading = isEditing ? isUpdating : isCreating;
 
   const form = useForm<CreateProjectFormData>({
     resolver: zodResolver(createProjectSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: project?.name ?? '',
+      description: project?.description ?? '',
     },
   });
 
+  useEffect(() => {
+    if (project) {
+      form.reset({
+        name: project.name,
+        description: project.description || '',
+      });
+    }
+  }, [project, form]);
+
   function onSubmit(data: CreateProjectFormData) {
-    createProject(data, {
-      onSuccess: () => {
-        setOpen(false);
-        form.reset();
-      },
-    });
+    if (isEditing) {
+      updateProject({ id: project!.id, data }, { onSuccess: () => onOpenChange(false) });
+    } else {
+      createProject(data, {
+        onSuccess: () => {
+          onOpenChange(false);
+          form.reset();
+        },
+      });
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="shadow-primary/20 hover:shadow-primary/30 gap-2 shadow-lg transition-all duration-300 hover:shadow-xl">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">پروژه جدید</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-106.25">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="sm:max-w-125">
         <DialogHeaderWithIcon
-          icon={FolderKanban}
-          title="ایجاد پروژه جدید"
-          description="یک پروژه جدید برای تیم خود بسازید"
+          icon={isEditing ? Pencil : FolderKanban}
+          title={isEditing ? 'ویرایش پروژه' : 'ایجاد پروژه جدید'}
+          description={
+            isEditing ? 'اطلاعات پروژه را ویرایش کنید' : 'یک پروژه جدید برای تیم خود بسازید'
+          }
         />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -65,13 +84,12 @@ export function CreateProjectDialog() {
                 <FormItem>
                   <FormLabel>نام پروژه</FormLabel>
                   <FormControl>
-                    <Input placeholder="مثال: وبسایت فروشگاهی" disabled={isCreating} {...field} />
+                    <Input placeholder="مثال: وبسایت فروشگاهی" disabled={isLoading} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="description"
@@ -80,8 +98,8 @@ export function CreateProjectDialog() {
                   <FormLabel>توضیحات</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="توضیح کوتاهی درباره پروژه..."
-                      disabled={isCreating}
+                      placeholder="توضیح کوتاه..."
+                      disabled={isLoading}
                       rows={3}
                       {...field}
                     />
@@ -90,12 +108,15 @@ export function CreateProjectDialog() {
                 </FormItem>
               )}
             />
-
             <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 انصراف
               </Button>
-              <SubmitButton isLoading={isCreating} icon={Plus} label="ایجاد پروژه" />
+              <SubmitButton
+                isLoading={isLoading}
+                icon={isEditing ? Pencil : Plus}
+                label={isEditing ? 'ذخیره تغییرات' : 'ایجاد پروژه'}
+              />
             </div>
           </form>
         </Form>

@@ -8,7 +8,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/shared/components/ui/form';
-import { Input } from '@/shared/components/ui/input';
 import { InputWithIcon } from '@/shared/components/ui/input-with-icon';
 import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,10 +62,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             <FormItem>
               <FormLabel>ایمیل</FormLabel>
               <FormControl>
-                <div className="relative">
-                  <Input {...field} disabled className="pr-10 opacity-60" />
-                  <Mail className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
-                </div>
+                <InputWithIcon icon={Mail} disabled className="opacity-60" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
