@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
+import { PersianDatePicker } from '@/shared/components/ui/persian-date-picker';
 import {
   Select,
   SelectContent,
@@ -237,11 +238,11 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
                   <FormItem>
                     <FormLabel>موعد تحویل</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        disabled={isLoading}
-                        {...field}
+                      <PersianDatePicker
                         value={field.value || ''}
+                        onChange={field.onChange}
+                        disabled={isLoading}
+                        className="w-full"
                       />
                     </FormControl>
                     <FormMessage />
