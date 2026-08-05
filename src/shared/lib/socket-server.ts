@@ -1,8 +1,10 @@
 import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { prisma } from './prisma';
+import { sendSSENotification } from './sse';
 
 const MAX_MESSAGE_LENGTH = 1000;
+const MAX_COMMENT_LENGTH = 1000;
 
 let io: SocketIOServer | null = null;
 
@@ -28,7 +30,6 @@ interface SendMessagePayload {
 
 type Ack = (response: { message?: unknown; error?: string }) => void;
 
-// Track online users (socket.id -> user)
 const onlineUsers = new Map<string, SocketUser>();
 
 const messageInclude = {
@@ -36,6 +37,10 @@ const messageInclude = {
   replyTo: {
     select: { id: true, content: true, sender: { select: { id: true, name: true } } },
   },
+} as const;
+
+const commentInclude = {
+  user: { select: { id: true, name: true, avatar: true } },
 } as const;
 
 export function getIO() {
@@ -71,9 +76,7 @@ export function initSocketServer(server: NetServer) {
   io.on('connection', (socket) => {
     console.log(`[Socket] User connected: ${socket.id}`);
 
-    // Register & authenticate the socket's user, and join their personal
-    // room so we can push room-list updates (unread badges, last message)
-    // for rooms they belong to but aren't currently viewing.
+    // ─── Register ─────────────────────────────
     socket.on('register', (user: SocketUser) => {
       onlineUsers.set(socket.id, user);
       socket.data.userId = user.userId;
@@ -89,16 +92,15 @@ export function initSocketServer(server: NetServer) {
       socket.emit('users:online_list', currentOnlineUsers);
     });
 
+    // ─── Room Join / Leave ────────────────────
     socket.on('room:join', async (roomId: string) => {
-      if (!socket.data.userId) return; // must register first
+      if (!socket.data.userId) return;
       if (!(await isRoomMember(roomId, socket.data.userId))) {
         console.warn(`[Socket] Denied room:join for non-member ${socket.data.userId} -> ${roomId}`);
         return;
       }
-
       socket.join(roomId);
       console.log(`[Socket] ${socket.data.userName} joined room ${roomId}`);
-
       const room = io?.sockets.adapter.rooms.get(roomId);
       io?.to(roomId).emit('room:online_count', room ? room.size : 0);
     });
@@ -106,13 +108,11 @@ export function initSocketServer(server: NetServer) {
     socket.on('room:leave', (roomId: string) => {
       socket.leave(roomId);
       console.log(`[Socket] ${socket.data.userName} left room ${roomId}`);
-
       const room = io?.sockets.adapter.rooms.get(roomId);
       io?.to(roomId).emit('room:online_count', room ? room.size : 0);
     });
 
-    // Send a message: this is the single source of truth for persistence.
-    // The REST endpoint exists only as a fallback for disconnected clients.
+    // ─── Chat Messages ────────────────────────
     socket.on('message:send', async (data: SendMessagePayload, ack?: Ack) => {
       try {
         const userId = socket.data.userId;
@@ -144,12 +144,8 @@ export function initSocketServer(server: NetServer) {
         });
 
         const payload = { ...message, clientId: data.clientId };
-
-        // Broadcast to everyone actively viewing the room (including sender).
         io?.to(data.roomId).emit('message:new', payload);
 
-        // Update the room list (last message / unread badge) for every
-        // member, even those not currently viewing this room.
         const members = await prisma.chatRoomMember.findMany({
           where: { roomId: data.roomId },
           select: { userId: true },
@@ -169,7 +165,69 @@ export function initSocketServer(server: NetServer) {
       }
     });
 
-    // Typing indicator
+    // ─── Task Comments ────────────────────────
+    socket.on('comment:add', async (data: { taskId: string; content: string }) => {
+      try {
+        const userId = socket.data.userId;
+        if (!userId) return;
+
+        const trimmed = (data.content || '').trim();
+        if (!trimmed) return;
+        if (trimmed.length > MAX_COMMENT_LENGTH) return;
+
+        const comment = await prisma.taskComment.create({
+          data: {
+            taskId: data.taskId,
+            userId,
+            content: trimmed,
+          },
+          include: commentInclude,
+        });
+
+        // Broadcast to ALL connected clients
+        io?.emit('comment:new', { taskId: data.taskId, comment });
+
+        // Notifications
+        const task = await prisma.task.findUnique({
+          where: { id: data.taskId },
+          select: {
+            title: true,
+            assigneeId: true,
+            creatorId: true,
+            project: { select: { name: true } },
+          },
+        });
+
+        if (task) {
+          const notifyUsers = new Set<string>();
+          if (task.assigneeId && task.assigneeId !== userId) notifyUsers.add(task.assigneeId);
+          if (task.creatorId && task.creatorId !== userId) notifyUsers.add(task.creatorId);
+
+          for (const uid of notifyUsers) {
+            await prisma.notification.create({
+              data: {
+                userId: uid,
+                title: 'نظر جدید',
+                message: `نظر جدیدی روی تسک "${task.title}" ثبت شد`,
+                type: 'COMMENT_ADDED',
+              },
+            });
+
+            sendSSENotification({
+              userId: uid,
+              type: 'COMMENT_ADDED',
+              title: 'نظر جدید',
+              message: `نظر جدیدی روی تسک "${task.title}" ثبت شد`,
+              data: { taskId: data.taskId, projectId: task.project?.name },
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[Socket] comment:add error:', error);
+      }
+    });
+
+    // ─── Typing Indicator ─────────────────────
     socket.on('typing:start', (data: { roomId: string }) => {
       socket.to(data.roomId).emit('typing:user_started', {
         userId: socket.data.userId,
@@ -185,9 +243,9 @@ export function initSocketServer(server: NetServer) {
       });
     });
 
+    // ─── Disconnect ───────────────────────────
     socket.on('disconnect', () => {
       console.log(`[Socket] User disconnected: ${socket.data.userName || socket.id}`);
-
       if (socket.data.userId) {
         onlineUsers.delete(socket.id);
         io?.emit('user:offline', {

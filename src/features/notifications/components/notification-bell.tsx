@@ -2,21 +2,45 @@
 
 import { Button } from '@/shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer';
 import { ROUTES } from '@/shared/lib/routes';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useNotifications } from '../hooks/use-notifications';
+import { useEffect, useState } from 'react';
+import { useNotificationsInfinite } from '../hooks/use-notifications-infinite';
 import { NotificationItem } from './notification-item';
+
+const PAGE_SIZE = 10;
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const {
+    notifications: displayedNotifications,
+    allNotifications,
+    unreadCount,
+    markAllAsRead,
+    hasMore,
+    loadMore,
+    reset,
+  } = useNotificationsInfinite();
 
-  const recentNotifications = notifications.slice(0, 5);
+  const { targetRef, isIntersecting } = useIntersectionObserver({
+    enabled: open && hasMore,
+    threshold: 0.1,
+  });
 
-  const handleClose = () => setOpen(false);
+  // Load more when sentinel enters viewport
+  useEffect(() => {
+    if (isIntersecting && hasMore) {
+      loadMore();
+    }
+  }, [isIntersecting, hasMore, loadMore]);
+
+  const handleClose = () => {
+    setOpen(false);
+    reset();
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -54,22 +78,29 @@ export function NotificationBell() {
           )}
         </div>
         <div className="max-h-80 overflow-y-auto">
-          {recentNotifications.length === 0 ? (
+          {displayedNotifications.length === 0 ? (
             <div className="p-8 text-center">
               <Bell className="text-muted-foreground/30 mx-auto h-8 w-8" aria-hidden="true" />
               <p className="text-muted-foreground mt-2 text-sm">اعلانی وجود ندارد</p>
             </div>
           ) : (
-            recentNotifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onClose={handleClose}
-              />
-            ))
+            <>
+              {displayedNotifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onClose={handleClose}
+                />
+              ))}
+
+              {/* Sentinel for infinite scroll */}
+              <div ref={targetRef} className="flex items-center justify-center py-3">
+                {hasMore && <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />}
+              </div>
+            </>
           )}
         </div>
-        {notifications.length > 5 && (
+        {allNotifications.length > PAGE_SIZE && (
           <div className="border-t p-2 text-center">
             <Button
               variant="ghost"

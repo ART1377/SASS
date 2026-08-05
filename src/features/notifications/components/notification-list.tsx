@@ -3,12 +3,29 @@
 import { EmptyState } from '@/shared/components/empty-state';
 import { Button } from '@/shared/components/ui/button';
 import { Bell, CheckCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useNotifications } from '../hooks/use-notifications';
 import { NotificationItem } from './notification-item';
 import { NotificationItemSkeleton } from './notification-item-skeleton';
 
+type FilterType = 'all' | 'unread' | 'read';
+
 export function NotificationList() {
   const { notifications, isLoading, markAllAsRead, unreadCount, isMarkingAll } = useNotifications();
+  const [filter, setFilter] = useState<FilterType>('all');
+
+  const readCount = notifications.length - unreadCount;
+
+  const filteredNotifications = useMemo(() => {
+    switch (filter) {
+      case 'unread':
+        return notifications.filter((n) => !n.isRead);
+      case 'read':
+        return notifications.filter((n) => n.isRead);
+      default:
+        return notifications;
+    }
+  }, [notifications, filter]);
 
   if (isLoading) {
     return (
@@ -31,11 +48,29 @@ export function NotificationList() {
   }
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          {unreadCount > 0 ? `${unreadCount} اعلان خوانده نشده` : 'همه اعلان‌ها خوانده شده‌اند'}
-        </p>
+    <div className="space-y-4">
+      {/* Header with filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-muted/50 flex items-center gap-1 rounded-xl p-1">
+          {(
+            [
+              { key: 'all', label: `همه (${notifications.length})` },
+              { key: 'unread', label: `خوانده نشده (${unreadCount})` },
+              { key: 'read', label: `خوانده شده (${readCount})` },
+            ] as const
+          ).map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={filter === key ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setFilter(key)}
+              className="rounded-lg text-xs"
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+
         {unreadCount > 0 && (
           <Button
             variant="outline"
@@ -49,11 +84,31 @@ export function NotificationList() {
           </Button>
         )}
       </div>
-      <div className="bg-card rounded-xl border">
-        {notifications.map((notification) => (
-          <NotificationItem key={notification.id} notification={notification} onClose={() => {}} />
-        ))}
-      </div>
+
+      {/* Filtered list */}
+      {filteredNotifications.length === 0 ? (
+        <EmptyState
+          icon={Bell}
+          title="اعلانی یافت نشد"
+          description={
+            filter === 'unread'
+              ? 'همه اعلان‌ها خوانده شده‌اند'
+              : filter === 'read'
+                ? 'هنوز اعلانی خوانده نشده'
+                : 'اعلانی وجود ندارد'
+          }
+        />
+      ) : (
+        <div className="bg-card rounded-xl border">
+          {filteredNotifications.map((notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+              onClose={() => {}}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

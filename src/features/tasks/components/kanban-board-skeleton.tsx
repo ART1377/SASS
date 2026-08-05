@@ -16,7 +16,7 @@ export function KanbanBoardSkeleton() {
 
       {/* Columns */}
       <div className="-mx-3 overflow-x-auto px-3 pb-4 md:mx-0 md:px-0">
-        <div className="grid min-w-[320px] grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-[320px] grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
           {KANBAN_COLUMNS.map((col) => (
             <div key={col.id} className="bg-muted/30 flex flex-col rounded-2xl p-3">
               <div className="mb-3 flex items-center gap-2 px-1">

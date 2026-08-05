@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/shared/components/ui/card';
 import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { getInitials } from '@/shared/lib/utils';
 import { Calendar, GripVertical, MessageSquare, Pencil, Trash2 } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { TASK_PRIORITY_LABELS } from '../constants';
 import type { Task } from '../types';
 
@@ -16,6 +16,7 @@ interface TaskCardProps {
   onDragStart: (task: Task) => void;
   onEdit?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
+  onView?: (task: Task) => void;
 }
 
 export const TaskCard = memo(function TaskCard({
@@ -23,30 +24,61 @@ export const TaskCard = memo(function TaskCard({
   onDragStart,
   onEdit,
   onDelete,
+  onView,
 }: TaskCardProps) {
   const actions = [
     { label: 'ویرایش', icon: Pencil, onClick: () => onEdit?.(task) },
     { label: 'حذف', icon: Trash2, onClick: () => onDelete?.(task.id), destructive: true },
   ];
 
+  // Open detail sheet on card click
+  const handleCardClick = useCallback(() => {
+    onView?.(task);
+  }, [onView, task]);
+
+  // Prevent card click when interacting with grip or dropdown
+  const handleGripDragStart = useCallback(
+    (e: React.DragEvent) => {
+      e.stopPropagation(); // don't trigger card click
+      onDragStart(task);
+    },
+    [onDragStart, task]
+  );
+
   return (
     <Card
       draggable
-      role="listitem"
-      aria-label={`تسک: ${task.title}`}
-      onDragStart={() => onDragStart(task)}
-      className="card-hover group relative cursor-grab border-0 shadow-md transition-all duration-200 active:cursor-grabbing"
+      role="button"
+      tabIndex={0}
+      aria-label={`مشاهده جزئیات تسک: ${task.title}`}
+      onDragStart={handleGripDragStart}
+      onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') handleCardClick();
+      }}
+      className="card-hover group relative cursor-pointer border-0 shadow-md transition-all duration-200 active:cursor-grabbing"
     >
       <CardContent className="space-y-2 p-3">
         {/* Header Row: Drag Handle + Title + Menu */}
         <div className="flex items-start gap-2">
-          <GripVertical className="text-muted-foreground/30 h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          {/* Grip – only for dragging */}
+          <div
+            draggable
+            onDragStart={handleGripDragStart}
+            onClick={(e) => e.stopPropagation()} // prevent card click
+            className="mt-1 shrink-0 cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="text-muted-foreground/30 h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+          </div>
+
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-sm font-medium">{task.title}</p>
           </div>
 
-          {/* Three‑dot menu – hidden until hover */}
-          <ActionDropdown items={actions} />
+          {/* Three‑dot menu – stop propagation so it doesn't open the sheet */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionDropdown items={actions} />
+          </div>
         </div>
 
         {/* Badges Row */}

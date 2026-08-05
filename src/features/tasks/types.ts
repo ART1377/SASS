@@ -53,3 +53,10 @@ export interface KanbanColumn {
   status: Task['status'];
   tasks: Task[];
 }
+
+export interface TaskComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: { id: string; name: string; avatar: string | null };
+}
