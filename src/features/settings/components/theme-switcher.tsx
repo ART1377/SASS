@@ -23,7 +23,7 @@ export function ThemeSwitcher() {
         <button
           onClick={() => setMode('light')}
           className={cn(
-            'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all duration-300',
+            'flex flex-1 cursor-pointer! items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all duration-300',
             !isDark
               ? 'bg-background text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
@@ -35,7 +35,7 @@ export function ThemeSwitcher() {
         <button
           onClick={() => setMode('dark')}
           className={cn(
-            'flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all duration-300',
+            'flex flex-1 cursor-pointer! items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all duration-300',
             isDark
               ? 'bg-background text-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
@@ -56,7 +56,7 @@ export function ThemeSwitcher() {
               <button
                 key={color.value}
                 onClick={() => setColor(color.value)}
-                className="group relative flex flex-1 flex-col items-center gap-2"
+                className="group relative flex flex-1 cursor-pointer! flex-col items-center gap-2"
               >
                 <div
                   className={cn(

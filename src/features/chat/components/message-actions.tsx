@@ -53,7 +53,7 @@ export function MessageActions({
           exit="exit"
           className={cn(
             'absolute top-0 flex items-center gap-1.5 transition-opacity duration-200',
-            isOwn ? '-left-28' : '-right-10',
+            isOwn ? '-left-40' : '-right-20',
             forceVisible ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'
           )}
         >

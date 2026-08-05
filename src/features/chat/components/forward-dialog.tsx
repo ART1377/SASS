@@ -50,7 +50,7 @@ export function ForwardDialog({ open, onOpenChange, onForward, count }: ForwardD
                   <button
                     key={room.id}
                     onClick={() => setSelectedRoomId(room.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                    className={`flex w-full cursor-pointer! items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
                       selectedRoomId === room.id
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'

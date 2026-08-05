@@ -61,7 +61,7 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
               aria-label={`باز کردن چت ${room.name}`}
               aria-current={selectedRoom?.id === room.id}
               className={cn(
-                'flex w-full items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
+                'flex w-full cursor-pointer! items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
                 selectedRoom?.id === room.id
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -94,10 +94,12 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
                       ? room.lastMessage.sender.name + ': ' + room.lastMessage.content
                       : `${room._count?.members ?? 0} عضو • ${room._count?.messages ?? 0} پیام`}
                   </p>
-                  {room.unreadCount && room.unreadCount > 0 && (
+                  {room.unreadCount && room.unreadCount > 0 ? (
                     <span className="bg-primary text-primary-foreground ml-2 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold">
                       {room.unreadCount > 99 ? '99+' : room.unreadCount}
                     </span>
+                  ) : (
+                    ''
                   )}
                 </div>
               </div>

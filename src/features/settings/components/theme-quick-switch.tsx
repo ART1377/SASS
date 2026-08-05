@@ -76,7 +76,7 @@ export function ThemeQuickSwitch() {
           <button
             onClick={() => setMode('light')}
             className={cn(
-              'relative flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium transition-all duration-300',
+              'relative flex flex-1 cursor-pointer! items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium transition-all duration-300',
               !isDark
                 ? 'bg-background text-foreground shadow-sm shadow-black/5'
                 : 'text-muted-foreground/60 hover:text-foreground'
@@ -93,7 +93,7 @@ export function ThemeQuickSwitch() {
           <button
             onClick={() => setMode('dark')}
             className={cn(
-              'relative flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium transition-all duration-300',
+              'relative flex flex-1 cursor-pointer! items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-medium transition-all duration-300',
               isDark
                 ? 'bg-background text-foreground shadow-sm shadow-black/5'
                 : 'text-muted-foreground/60 hover:text-foreground'
@@ -124,7 +124,7 @@ export function ThemeQuickSwitch() {
                 onClick={() => setColor(color.value)}
                 className={cn(
                   'group relative flex flex-1 flex-col items-center gap-1.5 rounded-xl py-2 transition-all duration-200',
-                  'hover:bg-muted/50',
+                  'hover:bg-muted/50 cursor-pointer!',
                   isActive && 'bg-muted/80'
                 )}
               >

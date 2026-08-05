@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Settings,
   Sparkles,
-  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -49,7 +48,7 @@ export function MobileHeader() {
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="flex w-72 flex-col p-0" showCloseButton={false}>
+        <SheetContent side="right" className="flex w-72 flex-col p-0">
           {/* Sheet header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-2">
@@ -58,11 +57,7 @@ export function MobileHeader() {
               </div>
               <SheetTitle className="text-base font-bold">تسک منیجر</SheetTitle>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={closeSheet}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
-
           {/* User info */}
           {user && (
             <div className="flex items-center gap-3 border-b px-4 pt-3 pb-5">

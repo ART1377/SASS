@@ -74,7 +74,7 @@ export function MessageBubble({
             isSelected
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-muted-foreground/30 bg-background',
-            isOwn ? 'left-2' : 'right-2'
+            isOwn ? '-left-6' : '-right-6'
           )}
           onClick={(e) => {
             e.stopPropagation();

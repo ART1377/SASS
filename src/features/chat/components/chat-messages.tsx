@@ -26,7 +26,6 @@ interface Props {
   hasOlderMessages?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
-  // ─── Forward / multi‑select props ──────────
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
@@ -153,7 +152,6 @@ export function ChatMessages({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onRetry={onRetry}
-                // ─── Forward props ────────────
                 selectMode={selectMode}
                 selectedIds={selectedIds}
                 onToggleSelect={onToggleSelect}
