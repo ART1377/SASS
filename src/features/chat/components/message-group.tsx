@@ -61,7 +61,6 @@ export function MessageGroupBubble({
         {!group.isOwn && (
           <p className="text-muted-foreground px-1 text-[10px] font-medium">{group.sender.name}</p>
         )}
-
         {group.messages.map((msg) => (
           <MessageBubble
             key={msg.id}

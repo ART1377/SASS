@@ -18,10 +18,10 @@ export function ScrollButton({ visible, onClick }: ScrollButtonProps) {
           exit={{ opacity: 0, y: 10, scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           onClick={onClick}
-          className="bg-primary text-primary-foreground shadow-primary/25 absolute right-4 bottom-4 z-20 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+          aria-label="پیمایش به پایین"
+          className="bg-primary text-primary-foreground shadow-primary/25 sticky bottom-4 left-1/2 z-20 mx-auto flex w-fit -translate-x-1/2 cursor-pointer! items-center gap-2 rounded-full p-3 text-xs font-medium shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
         >
           <ArrowDown className="h-3.5 w-3.5" />
-          <span>جدیدترین</span>
         </motion.button>
       )}
     </AnimatePresence>

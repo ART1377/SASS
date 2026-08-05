@@ -39,7 +39,6 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="border-b p-4">
         <h3 className="text-sm font-semibold">چت‌ها</h3>
         {rooms.length > 3 && (
@@ -49,7 +48,6 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
         )}
       </div>
 
-      {/* Room List */}
       <div className="flex-1 overflow-y-auto p-2">
         {filteredRooms.length === 0 ? (
           <p className="text-muted-foreground p-4 text-center text-sm">چتی پیدا نشد</p>
@@ -98,9 +96,7 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
                     <span className="bg-primary text-primary-foreground ml-2 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold">
                       {room.unreadCount > 99 ? '99+' : room.unreadCount}
                     </span>
-                  ) : (
-                    ''
-                  )}
+                  ) : null}
                 </div>
               </div>
             </button>

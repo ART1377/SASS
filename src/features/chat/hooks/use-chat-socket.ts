@@ -22,7 +22,6 @@ export function useChatSocket(roomId: string) {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const joinedRef = useRef(false);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -71,18 +70,8 @@ export function useChatSocket(roomId: string) {
     };
   }, [socket, isConnected, roomId]);
 
-  useEffect(
-    () => () => {
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    },
-    []
-  );
-
-  /**
-   * Sends a message through the socket, which is now the single source of
-   * truth for persistence (server writes to DB then broadcasts to the room,
-   * including the sender). Resolves with the persisted message or throws.
-   */
+  // Sends via the socket (server persists then broadcasts to the whole
+  // room, including the sender) and resolves with the persisted message.
   const send = useCallback(
     (payload: SendPayload): Promise<SocketMessage> => {
       return new Promise((resolve, reject) => {

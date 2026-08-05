@@ -64,7 +64,7 @@ export function ChatView() {
           showSidebar && !selectedRoom && 'hidden lg:flex'
         )}
       >
-        <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm">
+        <Card className="flex h-full flex-col gap-y-0 overflow-hidden border-0 shadow-sm">
           {selectedRoom ? (
             <>
               <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">

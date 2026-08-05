@@ -26,6 +26,8 @@ interface SendMessagePayload {
   sender: SocketUser;
   replyTo?: ReplyPayload | null;
   clientId?: string;
+  /** Set when forwarding — original author's name, content stays untouched. */
+  forwardedFromName?: string | null;
 }
 
 type Ack = (response: { message?: unknown; error?: string }) => void;
@@ -100,19 +102,19 @@ export function initSocketServer(server: NetServer) {
         return;
       }
       socket.join(roomId);
-      console.log(`[Socket] ${socket.data.userName} joined room ${roomId}`);
       const room = io?.sockets.adapter.rooms.get(roomId);
       io?.to(roomId).emit('room:online_count', room ? room.size : 0);
     });
 
     socket.on('room:leave', (roomId: string) => {
       socket.leave(roomId);
-      console.log(`[Socket] ${socket.data.userName} left room ${roomId}`);
       const room = io?.sockets.adapter.rooms.get(roomId);
       io?.to(roomId).emit('room:online_count', room ? room.size : 0);
     });
 
     // ─── Chat Messages ────────────────────────
+    // Sole persistence path for chat messages (regular sends and forwards
+    // both go through here). The REST endpoint is a fallback only.
     socket.on('message:send', async (data: SendMessagePayload, ack?: Ack) => {
       try {
         const userId = socket.data.userId;
@@ -134,6 +136,7 @@ export function initSocketServer(server: NetServer) {
             senderId: userId,
             content: trimmed,
             replyToId: data.replyTo?.id || null,
+            forwardedFromName: data.forwardedFromName || null,
           },
           include: messageInclude,
         });
@@ -184,10 +187,8 @@ export function initSocketServer(server: NetServer) {
           include: commentInclude,
         });
 
-        // Broadcast to ALL connected clients
         io?.emit('comment:new', { taskId: data.taskId, comment });
 
-        // Notifications
         const task = await prisma.task.findUnique({
           where: { id: data.taskId },
           select: {
@@ -245,7 +246,6 @@ export function initSocketServer(server: NetServer) {
 
     // ─── Disconnect ───────────────────────────
     socket.on('disconnect', () => {
-      console.log(`[Socket] User disconnected: ${socket.data.userName || socket.id}`);
       if (socket.data.userId) {
         onlineUsers.delete(socket.id);
         io?.emit('user:offline', {

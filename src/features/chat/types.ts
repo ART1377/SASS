@@ -37,6 +37,8 @@ export interface ChatMessage {
   replyTo?: ReplyInfo | null;
   createdAt: string;
   editedAt?: string | null;
+  /** Original author's name, set only on forwarded messages. Content itself is never mutated. */
+  forwardedFromName?: string | null;
   sender: {
     id: string;
     name: string;
@@ -76,12 +78,10 @@ export interface ChatMember {
   isTyping?: boolean;
 }
 
-/** Payload broadcast over the `message:new` socket event. */
 export interface SocketMessage extends ChatMessage {
   clientId?: string;
 }
 
-/** Payload broadcast over the `room:updated` socket event, used to keep the room list live. */
 export interface RoomUpdatedPayload {
   roomId: string;
   lastMessage: ChatMessage;

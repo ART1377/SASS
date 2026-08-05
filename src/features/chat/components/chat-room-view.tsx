@@ -7,8 +7,8 @@ import { AnimatePresence } from 'framer-motion';
 import { CheckSquare, Hash, Users } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { chatApi } from '../api/chat-api';
 import { useChat } from '../hooks/use-chat';
+import { useForwardMessage } from '../hooks/use-forward-message';
 import type { ChatRoom, ReplyInfo } from '../types';
 import { ChatInput, type ChatInputHandle } from './chat-input';
 import { ChatMessages } from './chat-messages';
@@ -34,6 +34,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     isLoadingOlder,
     loadOlderMessages,
   } = useChat(chatRoom.id);
+  const { forwardMessage } = useForwardMessage();
 
   const chatInputRef = useRef<ChatInputHandle>(null);
   const [replyTo, setReplyTo] = useState<ReplyInfo | null>(null);
@@ -43,7 +44,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   );
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  // ─── Forward / multi‑select state
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [forwardOpen, setForwardOpen] = useState(false);
@@ -81,7 +81,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     [sendMessage, replyTo, editingMessage, updateMessage]
   );
 
-  // ─── Multi‑select handlers
   const toggleSelect = useCallback((messageId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -97,9 +96,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
 
   const enterSelectMode = useCallback((messageId?: string) => {
     setSelectMode(true);
-    if (messageId) {
-      setSelectedIds(new Set([messageId]));
-    }
+    if (messageId) setSelectedIds(new Set([messageId]));
   }, []);
 
   const exitSelectMode = useCallback(() => {
@@ -107,26 +104,30 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     setSelectedIds(new Set());
   }, []);
 
-  // ─── Forward: send each selected message to the chosen room via REST API
   const handleForward = useCallback(
     async (targetRoomId: string) => {
       if (selectedIds.size === 0) return;
-
       const msgsToForward = messages.filter((m) => selectedIds.has(m.id));
       try {
         for (const msg of msgsToForward) {
-          const prefix = `📨 از ${msg.sender.name}: `;
-          await chatApi.sendMessage(targetRoomId, prefix + msg.content);
+          await forwardMessage(targetRoomId, msg);
         }
         toast.success(`${msgsToForward.length} پیام ارسال شد`);
       } catch {
         toast.error('خطا در ارسال پیام‌ها');
       }
-
       exitSelectMode();
     },
-    [selectedIds, messages, exitSelectMode]
+    [selectedIds, messages, exitSelectMode, forwardMessage]
   );
+
+  const handleReplyClick = useCallback((messageId: string) => {
+    setScrollToMessageId(null);
+    // Use setTimeout to ensure React processes the null first, then the new ID
+    setTimeout(() => {
+      setScrollToMessageId(messageId);
+    }, 0);
+  }, []);
 
   if (isError) {
     return (
@@ -183,7 +184,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         typingUsers={typingUsers}
         onReply={handleReply}
         scrollToMessageId={scrollToMessageId}
-        onReplyClick={(messageId) => setScrollToMessageId(messageId)}
+        onReplyClick={(messageId) => handleReplyClick(messageId)}
         onEdit={handleEdit}
         onDelete={handleDeleteRequest}
         onRetry={retryMessage}

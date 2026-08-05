@@ -153,6 +153,7 @@ model ChatMessage {
   replyTo ChatMessage? @relation("Reply", fields: [replyToId], references: [id], onDelete: SetNull)
   replies ChatMessage[] @relation("Reply")
   editedAt DateTime?
+  forwardedFromName String?
 }
 
 model ChatRoomMember {
