@@ -5,6 +5,7 @@ import 'react-day-picker/style.css';
 
 import { cn } from '@/shared/lib/utils';
 import { DayPicker, faIR } from '@daypicker/persian';
+import { getDefaultClassNames } from '@daypicker/react';
 import { Calendar } from 'lucide-react';
 import { Button } from './button';
 
@@ -60,6 +61,7 @@ export function PersianDatePicker({
     },
     [onChange]
   );
+  const defaultClassNames = getDefaultClassNames();
 
   return (
     <div ref={wrapperRef} className={cn('relative', className)}>
@@ -88,21 +90,19 @@ export function PersianDatePicker({
             startMonth={new Date(2020, 0)}
             endMonth={new Date(2030, 11)}
             modifiers={{ today: new Date() }}
-            modifiersStyles={{
-              today: {
-                border: '2px solid hsl(var(--primary))',
-                borderRadius: 'var(--rdp-day-radius)',
-                fontWeight: 'bold',
-                backgroundColor: '#ddd',
-              },
-            }}
+
             style={
               {
-                '--rdp-accent-color': 'hsl(var(--primary))',
-                '--rdp-accent-background-color': 'hsl(var(--primary) / 0.9)',
                 '--rdp-day-radius': '8px',
               } as React.CSSProperties
             }
+            classNames={{
+              today: `border-amber-500 bg-gray-200`, // Add a border to today's date
+              selected: `bg-primary/50`, // Highlight the selected day
+              caption_label: `text-sm font-medium text-foreground`,
+              day: `size-8 p-0 text-sm aria-selected:bg-primary/50
+              aria-selected:rounded-md aria-selected:text-foreground rounded-md hover:bg-primary/10 hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50`,
+            }}
           />
         </div>
       )}
