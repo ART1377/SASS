@@ -51,7 +51,7 @@ export function ChatView() {
               selectedRoom && 'hidden lg:block'
             )}
           >
-            <Card className="h-full overflow-hidden border-0 shadow-sm">
+            <Card className="border-border/50 dark:border-border/30 dark:bg-card/80 h-full overflow-hidden border shadow-sm">
               {isRoomsLoading ? (
                 <ChatRoomListSkeleton />
               ) : (
@@ -73,7 +73,7 @@ export function ChatView() {
           showSidebar && !selectedRoom && 'hidden lg:flex'
         )}
       >
-        <Card className="flex h-full flex-col overflow-hidden border-0 shadow-sm">
+        <Card className="border-border/50 dark:border-border/30 dark:bg-card/80 flex h-full flex-col overflow-hidden border shadow-sm">
           {selectedRoom ? (
             <>
               <div className="flex items-center gap-2 border-b px-4 py-2 lg:hidden">

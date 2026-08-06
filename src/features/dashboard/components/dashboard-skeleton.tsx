@@ -19,7 +19,10 @@ export function DashboardSkeleton() {
       {/* Stats cards skeleton */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="relative overflow-hidden border-0 shadow-lg">
+          <Card
+            key={i}
+            className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 relative overflow-hidden border shadow-sm"
+          >
             <div className="skeleton-shimmer absolute inset-0" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <Skeleton className="h-4 w-20 rounded-lg" />
@@ -36,7 +39,7 @@ export function DashboardSkeleton() {
       {/* Main grid skeleton */}
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="space-y-6 lg:col-span-4">
-          <Card className="border-0 shadow-lg">
+          <Card className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 relative overflow-hidden border shadow-sm">
             <CardHeader>
               <Skeleton className="h-5 w-32 rounded-lg" />
               <Skeleton className="h-3 w-48 rounded-md" />
@@ -45,7 +48,7 @@ export function DashboardSkeleton() {
               <Skeleton className="h-75 w-full rounded-xl" />
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-lg">
+          <Card className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 relative overflow-hidden border shadow-sm">
             <CardHeader>
               <Skeleton className="h-5 w-32 rounded-lg" />
               <Skeleton className="h-3 w-48 rounded-md" />
@@ -64,7 +67,7 @@ export function DashboardSkeleton() {
           </Card>
         </div>
         <div className="lg:col-span-3">
-          <Card className="border-0 shadow-lg">
+          <Card className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 relative overflow-hidden border shadow-sm">
             <CardHeader>
               <Skeleton className="h-5 w-32 rounded-lg" />
               <Skeleton className="h-3 w-48 rounded-md" />

@@ -42,7 +42,7 @@ export function SettingsView() {
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold md:text-xl">{user.name}</h2>
               <p className="text-muted-foreground truncate text-sm">{user.email}</p>
-              <Badge className="mt-2" variant="secondary">
+              <Badge className="mt-2" variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
                 {user.role === 'ADMIN'
                   ? 'مدیر سیستم'
                   : user.role === 'MANAGER'

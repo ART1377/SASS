@@ -150,7 +150,7 @@ export function ThemeQuickSwitch() {
                     'text-[10px] transition-all duration-200',
                     isActive
                       ? cn('font-medium opacity-100', getColorClass(color.value, isDark))
-                      : 'text-muted-foreground opacity-0 group-hover:opacity-60'
+                      : 'text-muted-foreground/70 opacity-0 group-hover:opacity-100'
                   )}
                 >
                   {color.label}

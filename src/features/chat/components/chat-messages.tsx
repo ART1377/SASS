@@ -126,7 +126,7 @@ export function ChatMessages({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="relative flex-1 space-y-4 overflow-y-auto p-4"
+      className="relative flex-1 space-y-4 overflow-y-auto p-4 pb-8!"
     >
       {isLoadingOlder && (
         <div className="flex justify-center py-2">

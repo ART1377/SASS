@@ -25,10 +25,10 @@ const statusColors: Record<string, string> = {
 };
 
 const statusBarColors: Record<string, string> = {
-  TODO: 'bg-gray-100',
-  IN_PROGRESS: 'bg-blue-100',
-  REVIEW: 'bg-orange-100',
-  DONE: 'bg-emerald-100',
+  TODO: 'bg-gray-100 dark:bg-gray-800',
+  IN_PROGRESS: 'bg-blue-100 dark:bg-blue-900/40',
+  REVIEW: 'bg-orange-100 dark:bg-orange-900/40',
+  DONE: 'bg-emerald-100 dark:bg-emerald-900/40',
 };
 
 const statuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const;
@@ -39,7 +39,7 @@ export function MyTasksOverview({ stats }: MyTasksOverviewProps) {
   const donePercent = Math.round((stats.statusCounts.DONE / total) * 100);
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <CheckSquare className="text-primary h-5 w-5" />

@@ -34,15 +34,13 @@ export const TaskCard = memo(function TaskCard({
   ];
   const { isUserOnline } = usePresence();
 
-  // Open detail sheet on card click
   const handleCardClick = useCallback(() => {
     onView?.(task);
   }, [onView, task]);
 
-  // Prevent card click when interacting with grip or dropdown
   const handleGripDragStart = useCallback(
     (e: React.DragEvent) => {
-      e.stopPropagation(); // don't trigger card click
+      e.stopPropagation();
       onDragStart(task);
     },
     [onDragStart, task]
@@ -59,8 +57,11 @@ export const TaskCard = memo(function TaskCard({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') handleCardClick();
       }}
-      className="card-hover group relative cursor-pointer border-0 shadow-md transition-all duration-200 active:cursor-grabbing"
+      className="card-hover group border-border/50 bg-card dark:border-border/30 dark:bg-card/80 dark:hover:border-border/50 focus:ring-ring focus:ring-offset-background relative cursor-pointer border shadow-sm transition-all duration-300 focus:ring-2 focus:ring-offset-2 focus:outline-none active:cursor-grabbing"
     >
+      {/* Gradient overlay on hover */}
+      <div className="from-primary/5 pointer-events-none absolute inset-0 rounded-xl bg-linear-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
       <CardContent className="space-y-2 p-3">
         {/* Header Row: Drag Handle + Title + Menu */}
         <div className="flex items-start gap-2">
@@ -68,10 +69,10 @@ export const TaskCard = memo(function TaskCard({
           <div
             draggable
             onDragStart={handleGripDragStart}
-            onClick={(e) => e.stopPropagation()} // prevent card click
-            className="mt-1 shrink-0 cursor-grab active:cursor-grabbing"
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0 cursor-grab active:cursor-grabbing"
           >
-            <GripVertical className="text-muted-foreground/30 h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+            <GripVertical className="text-muted-foreground/40 h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -101,8 +102,8 @@ export const TaskCard = memo(function TaskCard({
         </div>
 
         {/* Footer Row: Comments + Assignee */}
-        <div className="border-border/50 flex items-center justify-between border-t pt-1">
-          <div className="text-muted-foreground flex items-center gap-1 text-xs">
+        <div className="border-border/40 flex items-center justify-between border-t pt-1.5">
+          <div className="text-muted-foreground/70 flex items-center gap-1 text-xs">
             <MessageSquare className="h-3 w-3" />
             {task._count?.comments ?? 0}
           </div>

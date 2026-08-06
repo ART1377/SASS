@@ -80,7 +80,10 @@ export function NotificationBell() {
         <div className="max-h-80 overflow-y-auto">
           {displayedNotifications.length === 0 ? (
             <div className="p-8 text-center">
-              <Bell className="text-muted-foreground/30 mx-auto h-8 w-8" aria-hidden="true" />
+              <Bell
+                className="text-muted-foreground/40 dark:text-muted-foreground/60 mx-auto h-8 w-8"
+                aria-hidden="true"
+              />
               <p className="text-muted-foreground mt-2 text-sm">اعلانی وجود ندارد</p>
             </div>
           ) : (

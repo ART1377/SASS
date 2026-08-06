@@ -29,7 +29,7 @@ export function NotificationList() {
 
   if (isLoading) {
     return (
-      <div className="bg-card rounded-xl border">
+      <div className="bg-card border-border/60 dark:border-border/40 rounded-xl border">
         {Array.from({ length: 5 }).map((_, i) => (
           <NotificationItemSkeleton key={i} />
         ))}
@@ -51,7 +51,7 @@ export function NotificationList() {
     <div className="space-y-4">
       {/* Header with filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="bg-muted/50 flex items-center gap-1 rounded-xl p-1">
+        <div className="bg-muted/60 dark:bg-muted/80 flex items-center gap-1 rounded-xl p-1">
           {(
             [
               { key: 'all', label: `همه (${notifications.length})` },

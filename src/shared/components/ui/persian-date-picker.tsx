@@ -14,6 +14,7 @@ interface PersianDatePickerProps {
   onChange: (date: string) => void;
   placeholder?: string;
   className?: string;
+  disabled: boolean;
 }
 
 export function PersianDatePicker({
@@ -21,6 +22,7 @@ export function PersianDatePicker({
   onChange,
   placeholder = 'انتخاب تاریخ',
   className,
+  disabled = false,
 }: PersianDatePickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -90,7 +92,7 @@ export function PersianDatePicker({
             startMonth={new Date(2020, 0)}
             endMonth={new Date(2030, 11)}
             modifiers={{ today: new Date() }}
-
+            disabled={disabled}
             style={
               {
                 '--rdp-day-radius': '8px',

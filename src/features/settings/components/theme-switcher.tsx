@@ -26,7 +26,7 @@ export function ThemeSwitcher() {
             'flex flex-1 cursor-pointer! items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition-all duration-300',
             !isDark
               ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
+              : 'text-muted-foreground/90 hover:text-foreground hover:bg-muted/40'
           )}
         >
           <Sun className="h-4 w-4" />
@@ -76,7 +76,7 @@ export function ThemeSwitcher() {
                 <span
                   className={cn(
                     'text-[10px] transition-colors sm:text-xs',
-                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    isActive ? 'text-foreground font-medium' : 'text-muted-foreground/80'
                   )}
                 >
                   {color.label}

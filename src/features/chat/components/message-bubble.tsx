@@ -49,6 +49,8 @@ export function MessageBubble({
   return (
     <div className={cn('w-full', isHighlighted && 'bg-primary/20 rounded-2xl')}>
       <motion.div
+        role="article"
+        aria-label={`پیام از ${message.sender.name}`}
         ref={(el) => onSetRef(message.id, el)}
         layout
         initial={{ opacity: 0, y: 10, scale: 0.95 }}

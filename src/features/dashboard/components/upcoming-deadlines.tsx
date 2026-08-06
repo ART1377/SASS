@@ -25,7 +25,7 @@ const priorityLabels: Record<string, string> = {
 export function UpcomingDeadlines({ deadlines }: UpcomingDeadlinesProps) {
   if (!deadlines || deadlines.length === 0) {
     return (
-      <Card className="card-hover border-0 shadow-lg">
+      <Card className="card-hover border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">موعدهای نزدیک</CardTitle>
           <CardDescription>موعدی برای ۷ روز آینده وجود ندارد</CardDescription>
@@ -43,7 +43,7 @@ export function UpcomingDeadlines({ deadlines }: UpcomingDeadlinesProps) {
   }
 
   return (
-    <Card className="card-hover border-0 shadow-lg">
+    <Card className="card-hover border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg">موعدهای نزدیک</CardTitle>
         <CardDescription>تسک‌های با موعد تحویل در ۷ روز آینده</CardDescription>

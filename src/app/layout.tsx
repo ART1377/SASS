@@ -7,7 +7,7 @@ import { SocketProvider } from '@/shared/providers/socket-provider';
 import { ThemeProvider } from '@/shared/providers/theme-provider';
 import type { Metadata } from 'next';
 import { Vazirmatn } from 'next/font/google';
-import './globals.css';
+import '../styles/globals.css';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic', 'latin'],

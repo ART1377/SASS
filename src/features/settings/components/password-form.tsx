@@ -46,7 +46,7 @@ export function PasswordForm() {
               <FormControl>
                 <div className="relative">
                   <PasswordInput placeholder="••••••••" {...field} />
-                  <Lock className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+                  <Lock className="text-muted-foreground/60 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
                 </div>
               </FormControl>
               <FormMessage />
@@ -63,7 +63,7 @@ export function PasswordForm() {
               <FormControl>
                 <div className="relative">
                   <PasswordInput placeholder="حداقل ۸ کاراکتر" {...field} />
-                  <KeyRound className="text-muted-foreground/50 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+                  <KeyRound className="text-muted-foreground/60 absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
                 </div>
               </FormControl>
               <FormMessage />

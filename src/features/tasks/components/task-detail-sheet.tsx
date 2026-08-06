@@ -139,7 +139,7 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
               onKeyDown={handleKeyDown}
               placeholder="نظر خود را بنویسید..."
               rows={2}
-              className="resize-none text-sm"
+              className="placeholder:text-muted-foreground/60 resize-none text-sm"
             />
             <Button
               onClick={handleSubmit}

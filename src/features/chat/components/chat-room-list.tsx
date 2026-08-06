@@ -28,7 +28,7 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
     return (
       <div className="flex h-full items-center justify-center p-8">
         <div className="text-center">
-          <MessageSquare className="text-muted-foreground/30 mx-auto h-10 w-10" />
+          <MessageSquare className="text-muted-foreground/40 dark:text-muted-foreground/60 mx-auto h-10 w-10" />
           <p className="text-muted-foreground mt-3 text-sm">چت رومی وجود ندارد</p>
           <p className="text-muted-foreground/50 mt-1 text-xs">
             با ایجاد پروژه، چت روم ساخته می‌شود
@@ -59,9 +59,9 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
               aria-label={`باز کردن چت ${room.name}`}
               aria-current={selectedRoom?.id === room.id}
               className={cn(
-                'flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
+                'flex w-full cursor-pointer! items-start gap-3 rounded-xl px-3 py-3 text-right transition-all duration-200',
                 selectedRoom?.id === room.id
-                  ? 'bg-primary/10 text-primary font-medium'
+                  ? 'bg-primary/10 text-primary dark:bg-primary/15 font-medium'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >

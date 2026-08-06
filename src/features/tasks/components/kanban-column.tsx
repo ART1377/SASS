@@ -40,7 +40,7 @@ export function KanbanColumn({
       aria-label={column.title}
       className={cn(
         'bg-muted/30 flex flex-col rounded-2xl border-2 border-dashed border-transparent p-3 transition-all duration-300',
-        isTarget && 'border-primary/30 bg-primary/5'
+        isTarget && 'border-primary/50 bg-primary/10'
       )}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -65,7 +65,7 @@ export function KanbanColumn({
               exit={{ opacity: 0 }}
               className="border-border/50 flex flex-1 items-center justify-center rounded-xl border border-dashed p-8"
             >
-              <p className="text-muted-foreground text-xs">تسکی وجود ندارد</p>
+              <p className="text-muted-foreground/70 text-xs">تسکی وجود ندارد</p>{' '}
             </motion.div>
           ) : (
             column.tasks.map((task) => (

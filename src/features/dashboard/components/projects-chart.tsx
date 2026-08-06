@@ -23,7 +23,7 @@ export function ProjectsChart({ projectStats }: ProjectsChartProps) {
 
   if (!projectStats || projectStats.length === 0) {
     return (
-      <Card className="card-hover border-0 shadow-lg">
+      <Card className="card-hover border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">آمار پروژه‌ها</CardTitle>
           <CardDescription>داده‌ای برای نمایش وجود ندارد</CardDescription>
@@ -111,7 +111,7 @@ export function ProjectsChart({ projectStats }: ProjectsChartProps) {
   };
 
   return (
-    <Card className="card-hover border-0 shadow-lg">
+    <Card className="card-hover border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg">آمار پروژه‌ها</CardTitle>
         <CardDescription>تسک‌های تکمیل شده و در حال انجام</CardDescription>

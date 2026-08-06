@@ -28,8 +28,8 @@ export function NotificationItem({ notification, onClose }: NotificationItemProp
     <div
       onClick={onClose}
       className={cn(
-        'hover:bg-muted/50 flex w-full items-start gap-3 border-b p-3 text-right transition-colors',
-        !notification.isRead && 'bg-primary/5'
+        'hover:bg-muted/50 border-border/60 dark:border-border/40 flex w-full cursor-pointer items-start gap-3 border-b p-3 text-right transition-colors',
+        !notification.isRead && 'bg-muted/60'
       )}
     >
       {/* Type Icon */}

@@ -45,7 +45,7 @@ export function ProjectHealth({ stats }: ProjectHealthProps) {
   }
 
   return (
-    <Card className="border-0 shadow-lg">
+    <Card className="border-border/50 bg-card dark:border-border/30 dark:bg-card/80 border shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <FolderKanban className="text-primary h-5 w-5" />

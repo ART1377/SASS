@@ -23,9 +23,11 @@ export function ProjectCard({ project, onEdit, onDeleteRequest, onInvite }: Proj
   ];
 
   return (
-    <Card className="card-hover group relative border-0 shadow-lg transition-all duration-300">
-      {/* ... gradient overlay ... */}
+    <Card className="card-hover group border-border/50 bg-card dark:border-border/30 dark:bg-card/80 dark:hover:border-border/50 relative border shadow-sm transition-all duration-300">
+      <div className="from-primary/5 pointer-events-none absolute inset-0 rounded-xl bg-linear-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+        {' '}
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110">
             <span className="text-primary text-lg font-bold">{getInitials(project.name)}</span>
@@ -35,12 +37,11 @@ export function ProjectCard({ project, onEdit, onDeleteRequest, onInvite }: Proj
             <p className="text-muted-foreground text-xs">{formatDate(project.createdAt)}</p>
           </div>
         </div>
-
         <ActionDropdown items={actions} />
       </CardHeader>
 
       <CardContent>
-        <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">
+        <p className="text-muted-foreground/80 mb-4 line-clamp-2 text-sm">
           {project.description || 'بدون توضیحات'}
         </p>
         <div className="flex items-center justify-between">

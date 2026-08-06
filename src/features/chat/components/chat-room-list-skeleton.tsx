@@ -3,8 +3,7 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 export function ChatRoomListSkeleton() {
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="border-b p-4">
+      <div className="border-border/60 dark:border-border/40 border-b p-4">
         <Skeleton className="h-5 w-16 rounded-lg" />
         <Skeleton className="mt-3 h-10 w-full rounded-xl" />
       </div>

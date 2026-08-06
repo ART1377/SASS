@@ -37,6 +37,7 @@ export function ProjectsList() {
           size="sm"
           onClick={() => setCreateOpen(true)}
           className="shadow-primary/20 gap-2 shadow-lg"
+          aria-label="ایجاد پروژه جدید"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">پروژه جدید</span>
@@ -61,6 +62,7 @@ export function ProjectsList() {
             <Button
               onClick={() => setCreateOpen(true)}
               className="shadow-primary/20 gap-2 shadow-lg"
+              aria-label="ایجاد پروژه جدید"
             >
               <Plus className="h-4 w-4" /> ایجاد اولین پروژه
             </Button>

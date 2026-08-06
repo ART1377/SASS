@@ -2,7 +2,7 @@
 
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .purple-dark *, .green-dark *, .blue-dark *, .orange-dark *, .rose-dark *));
 
 @theme inline {
   --color-background: var(--background);

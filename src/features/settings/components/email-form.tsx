@@ -39,7 +39,7 @@ export function EmailForm({ currentEmail }: EmailFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="bg-muted/50 mb-2 rounded-xl p-3">
+        <div className="bg-muted/80 mb-2 rounded-xl p-3">
           <p className="text-muted-foreground text-sm">
             ایمیل فعلی: <span className="text-foreground font-medium">{currentEmail}</span>
           </p>

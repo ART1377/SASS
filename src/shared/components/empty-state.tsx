@@ -26,7 +26,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         animate={{ scale: 1 }}
         transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
       >
-        <Icon className="text-muted-foreground/50 h-12 w-12" />
+        <Icon className="text-muted-foreground/40 dark:text-muted-foreground/60 h-12 w-12" />
       </motion.div>
       <h3 className="mt-4 text-lg font-semibold">{title}</h3>
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">{description}</p>

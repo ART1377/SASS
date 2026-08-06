@@ -146,7 +146,7 @@ export function KanbanToolbar({
 
       {/* Row 3: View toggle + Create */}
       <div className="flex items-center justify-between">
-        <div className="bg-muted/50 flex items-center gap-1 rounded-xl p-1">
+        <div className="bg-primary/10 flex items-center gap-1 rounded-xl p-1">
           <Button
             variant={viewMode === 'kanban' ? 'default' : 'ghost'}
             size="icon"

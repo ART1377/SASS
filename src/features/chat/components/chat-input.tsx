@@ -98,7 +98,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-primary/5 flex items-center gap-2 border-b px-4 py-2"
+            className="bg-primary/5 dark:bg-primary/10 flex items-center gap-2 border-b px-4 py-2"
           >
             <Pencil className="text-primary h-3.5 w-3.5 shrink-0" />
             <span className="text-muted-foreground flex-1 truncate text-xs">
@@ -129,7 +129,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
             rows={1}
             disabled={isSending}
             aria-label="پیام"
-            className="placeholder:text-muted-foreground/50 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed focus:outline-none disabled:opacity-50"
+            className="placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground/60 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm leading-relaxed focus:outline-none disabled:opacity-50"
             style={{ height: MIN_HEIGHT, minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
           />
           <motion.div
