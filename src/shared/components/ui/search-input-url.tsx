@@ -3,33 +3,41 @@
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { cn } from '@/shared/lib/utils';
 import { Search, X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useRef, useState } from 'react';
 
-interface SearchInputProps {
+interface SearchInputURLProps {
   placeholder?: string;
-  onSearch: (value: string) => void;
-  delay?: number;
   className?: string;
-  defaultValue?: string;
+  delay?: number;
 }
 
-export function SearchInput({
+export function SearchInputURL({
   placeholder = 'جستجو...',
-  onSearch,
-  delay = 300,
   className,
-  defaultValue = '',
-}: SearchInputProps) {
-  const [value, setValue] = useState(defaultValue);
+  delay = 300,
+}: SearchInputURLProps) {
+  const [urlValue, setUrlValue] = useQueryState('q', { defaultValue: '' });
+  const [value, setValue] = useState(urlValue);
   const debouncedValue = useDebounce(value, delay);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync debounced value to parent
+  // Sync from URL when it changes externally (e.g., back/forward navigation)
   useEffect(() => {
-    onSearch(debouncedValue);
-  }, [debouncedValue, onSearch]);
+    setValue(urlValue);
+  }, [urlValue]);
 
-  // Clear with Escape key
+  // Push to URL only when length >= 2 or cleared to 0
+  useEffect(() => {
+    if (debouncedValue.length === 0) {
+      setUrlValue(null); // remove param
+    } else if (debouncedValue.length >= 2) {
+      setUrlValue(debouncedValue);
+    }
+    // if length == 1, do nothing (keep previous URL value)
+  }, [debouncedValue, setUrlValue]);
+
+  // Clear with Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && document.activeElement === inputRef.current) {
@@ -48,12 +56,9 @@ export function SearchInput({
 
   return (
     <div className={cn('relative w-full', className)}>
-      {/* Icon */}
       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
         <Search className="text-muted-foreground/40 h-4 w-4" />
       </div>
-
-      {/* Input */}
       <input
         ref={inputRef}
         type="text"
@@ -61,20 +66,18 @@ export function SearchInput({
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'bg-muted/40 focus:bg-background h-9 w-full rounded-lg border-0 py-2 pr-10 pl-10 text-sm',
+          'bg-muted/40 h-9 w-full rounded-lg border-0 py-2 pr-10 pl-10 text-sm',
           'placeholder:text-muted-foreground/40',
           'ring-primary/20 ring-1 transition-all duration-200',
-          'focus:ring-primary/40 focus:ring-1 focus:outline-none',
+          'focus:bg-background focus:ring-primary/40 focus:ring-1 focus:outline-none',
           className
         )}
       />
-
-      {/* Clear button + Results count */}
       {value && (
         <div className="absolute inset-y-0 left-0 flex items-center gap-1 pl-3">
           <button
             onClick={handleClear}
-            className="text-muted-foreground/40 hover:text-muted-foreground hover:bg-primary/10 cursor-pointer! rounded-lg p-1 transition-colors"
+            className="text-muted-foreground/40 hover:bg-primary/10 hover:text-muted-foreground cursor-pointer rounded-lg p-1 transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>

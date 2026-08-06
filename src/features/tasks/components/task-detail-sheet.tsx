@@ -1,5 +1,6 @@
 'use client';
 
+import { OnlineBadge } from '@/shared/components/online-badge';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -7,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/component
 import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { formatDateTime, getInitials } from '@/shared/lib/utils';
+import { usePresence } from '@/shared/providers/presence-provider'; // ← import
 import { Loader2, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '../constants';
@@ -22,6 +24,7 @@ interface TaskDetailSheetProps {
 export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetProps) {
   const [newComment, setNewComment] = useState('');
   const { comments, isLoading, addComment, isAddingComment } = useTaskComments(task.id, open);
+  const { isUserOnline } = usePresence(); // ← add
 
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -73,11 +76,14 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
           )}
           {task.assignee && (
             <div className="mt-3 flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[9px]">
-                  {getInitials(task.assignee.name)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-[9px]">
+                    {getInitials(task.assignee.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <OnlineBadge isOnline={isUserOnline(task.assignee.id)} /> {/* ← real */}
+              </div>
               <span className="text-muted-foreground text-xs">
                 واگذار شده به {task.assignee.name}
               </span>
@@ -99,11 +105,14 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
             <div className="space-y-4">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex gap-3">
-                  <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                      {getInitials(comment.user.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative h-fit">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                        {getInitials(comment.user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <OnlineBadge isOnline={isUserOnline(comment.user.id)} /> {/* ← real */}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{comment.user.name}</p>

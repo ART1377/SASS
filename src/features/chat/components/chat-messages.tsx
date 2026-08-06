@@ -30,6 +30,7 @@ interface Props {
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
+  onCopy?: (content: string) => void;
 }
 
 export function ChatMessages({
@@ -50,6 +51,7 @@ export function ChatMessages({
   selectedIds,
   onToggleSelect,
   onLongPress,
+  onCopy,
 }: Props) {
   const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
 
@@ -156,6 +158,7 @@ export function ChatMessages({
                 selectedIds={selectedIds}
                 onToggleSelect={onToggleSelect}
                 onLongPress={onLongPress}
+                onCopy={onCopy}
               />
             </div>
           );

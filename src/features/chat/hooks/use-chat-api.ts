@@ -7,29 +7,46 @@ import type { ChatMessage } from '../types';
 
 export function useChatAPI(roomId: string) {
   const queryClient = useQueryClient();
+  const messagesQueryKey = queryKeys.chat.messages(roomId);
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: queryKeys.chat.messages(roomId),
+    queryKey: messagesQueryKey,
     queryFn: ({ pageParam }: { pageParam?: string }) =>
       chatApi.getMessages(roomId, pageParam, MESSAGES_PAGE_SIZE),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    // Messages arrive live via the socket; there's no need to treat the REST
-    // snapshot as stale and silently refetch it out from under the user.
     staleTime: Infinity,
   });
 
-  // Pages are fetched newest-first (each page = one page of older messages),
-  // so flatten in reverse and keep each page's internal chronological order.
   const messages = useMemo<ChatMessage[]>(() => {
     if (!messagesQuery.data) return [];
     return [...messagesQuery.data.pages].reverse().flatMap((page) => page.messages);
   }, [messagesQuery.data]);
 
+  // ── Optimistic Delete ──────────────────────
   const deleteMutation = useMutation({
     mutationFn: (messageId: string) => chatApi.deleteMessage(roomId, messageId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chat.messages(roomId) });
+    onMutate: async (messageId) => {
+      await queryClient.cancelQueries({ queryKey: messagesQueryKey });
+      const previousData = queryClient.getQueryData(messagesQueryKey);
+
+      queryClient.setQueryData(messagesQueryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            messages: page.messages.filter((m: ChatMessage) => m.id !== messageId),
+          })),
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (_err, _messageId, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(messagesQueryKey, context.previousData);
+      }
     },
   });
 
@@ -37,7 +54,7 @@ export function useChatAPI(roomId: string) {
     mutationFn: ({ messageId, content }: { messageId: string; content: string }) =>
       chatApi.updateMessage(roomId, messageId, content),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chat.messages(roomId) });
+      queryClient.invalidateQueries({ queryKey: messagesQueryKey });
     },
   });
 
@@ -50,6 +67,7 @@ export function useChatAPI(roomId: string) {
     isLoadingOlder: messagesQuery.isFetchingNextPage,
     loadOlderMessages: messagesQuery.fetchNextPage,
     deleteMessage: deleteMutation.mutate,
+    deleteMessageAsync: deleteMutation.mutateAsync, // ← added
     isDeleting: deleteMutation.isPending,
     updateMessage: (messageId: string, content: string) =>
       updateMutation.mutate({ messageId, content }),

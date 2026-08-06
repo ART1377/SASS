@@ -4,10 +4,11 @@ import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
-import { SearchInput } from '@/shared/components/ui/search-input';
+import { SearchInputURL } from '@/shared/components/ui/search-input-url';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FolderKanban, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 import { useProjects } from '../hooks/use-projects';
 import type { Project } from '../types';
 import { InviteMemberDialog } from './invite-member-dialog';
@@ -16,40 +17,42 @@ import { ProjectCardSkeleton } from './project-card-skeleton';
 import { ProjectDialog } from './project-dialog';
 
 export function ProjectsList() {
-  const { projects, isLoading, isError, deleteProject, isDeleting } = useProjects();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery] = useQueryState('q', { defaultValue: '' });
+  const { projects, isLoading, isError, deleteProject, isDeleting } = useProjects({
+    q: searchQuery || undefined,
+  });
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [inviteTarget, setInviteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const filteredProjects = useMemo(
-    () =>
-      searchQuery
-        ? projects.filter(
-            (p) =>
-              p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-        : projects,
-    [projects, searchQuery]
-  );
-
-  if (isLoading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <ProjectCardSkeleton key={i} />
-        ))}
+  // Toolbar is always visible – never unmount the search input
+  return (
+    <div className="space-y-4">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3">
+        <SearchInputURL placeholder="جستجوی پروژه..." className="flex-1" />
+        <Button
+          size="sm"
+          onClick={() => setCreateOpen(true)}
+          className="shadow-primary/20 gap-2 shadow-lg"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">پروژه جدید</span>
+        </Button>
       </div>
-    );
-  }
 
-  if (isError) return <ErrorState onRetry={() => window.location.reload()} />;
-
-  if (projects.length === 0) {
-    return (
-      <>
+      {/* Content area */}
+      {isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ProjectCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : isError ? (
+        <ErrorState onRetry={() => window.location.reload()} />
+      ) : projects.length === 0 && !searchQuery ? (
         <EmptyState
           icon={FolderKanban}
           title="پروژه‌ای یافت نشد"
@@ -63,34 +66,16 @@ export function ProjectsList() {
             </Button>
           }
         />
-        {/* Always render the dialog, controlled by open prop */}
-        <ProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
-      </>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <SearchInput placeholder="جستجوی پروژه..." onSearch={setSearchQuery} className="flex-1" />
-        <Button onClick={() => setCreateOpen(true)} className="shadow-primary/20 gap-2 shadow-lg">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">پروژه جدید</span>
-        </Button>
-      </div>
-
-      {searchQuery && filteredProjects.length === 0 && (
+      ) : searchQuery && projects.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
           title="نتیجه‌ای یافت نشد"
           description={`پروژه‌ای با "${searchQuery}" پیدا نشد`}
         />
-      )}
-
-      {filteredProjects.length > 0 && (
+      ) : (
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout">
-            {filteredProjects.map((project, index) => (
+            {projects.map((project, index) => (
               <motion.div
                 key={project.id}
                 layout
@@ -114,7 +99,7 @@ export function ProjectsList() {
         </div>
       )}
 
-      {/* Create / Edit Dialogs (always mounted) */}
+      {/* Dialogs */}
       <ProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
       {editingProject && (
         <ProjectDialog
@@ -125,13 +110,11 @@ export function ProjectsList() {
           }}
         />
       )}
-
-      {/* Delete Confirmation */}
       <DeleteConfirmDialog
         open={!!deletingProjectId}
         onOpenChange={() => setDeletingProjectId(null)}
         title="حذف پروژه"
-        description="از حذف این پروژه مطمئن هستید؟ تمام تسک‌ها و چت‌های مربوطه نیز حذف خواهند شد."
+        description="از حذف این پروژه مطمئن هستید؟"
         onConfirm={() => {
           if (deletingProjectId) {
             deleteProject(deletingProjectId);
@@ -140,8 +123,6 @@ export function ProjectsList() {
         }}
         isDeleting={isDeleting}
       />
-
-      {/* Invite Dialog */}
       {inviteTarget && (
         <InviteMemberDialog
           projectId={inviteTarget.id}

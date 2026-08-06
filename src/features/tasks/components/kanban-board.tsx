@@ -1,125 +1,102 @@
 'use client';
 
-import { useProjects } from '@/features/projects/hooks/use-projects';
 import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
-import { SearchInput } from '@/shared/components/ui/search-input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Columns, List, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { KANBAN_COLUMNS } from '../constants';
-import { useTaskDragDrop } from '../hooks/use-task-drag-drop';
-import { useTasks } from '../hooks/use-tasks';
+import { Columns, Plus } from 'lucide-react';
+import { useKanbanBoard } from '../hooks/use-kanban-board';
+import { useProjectMembers } from '../hooks/use-project-members';
 import type { Task } from '../types';
 import { KanbanBoardSkeleton } from './kanban-board-skeleton';
 import { KanbanColumn } from './kanban-column';
+import { KanbanToolbar } from './kanban-toolbar';
 import { TaskCard } from './task-card';
 import { TaskDetailSheet } from './task-detail-sheet';
 import { TaskDialog } from './task-dialog';
 
+const SORT_OPTIONS = [
+  { value: 'createdAt_desc', label: 'جدیدترین' },
+  { value: 'createdAt_asc', label: 'قدیمی‌ترین' },
+  { value: 'dueDate_asc', label: 'موعد (نزدیک‌ترین)' },
+  { value: 'dueDate_desc', label: 'موعد (دورترین)' },
+  { value: 'priority_asc', label: 'اولویت (کم→زیاد)' },
+  { value: 'priority_desc', label: 'اولویت (زیاد→کم)' },
+] as const;
+
 export function KanbanBoard() {
-  const { projects } = useProjects();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const { tasks, isLoading, isError, updateTask, deleteTask, isDeleting } = useTasks(
+  const {
+    tasks,
+    isLoading,
+    isError,
+    isDeleting,
+    hasNoTasks,
+    columns,
+    projects,
+    searchQuery,
+    selectedProjectId,
+    setSelectedProjectId,
+    priorityFilter,
+    setPriorityFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    combinedSort,
+    setCombinedSort,
+    viewMode,
+    setViewMode,
+    draggedTask,
+    handleDragStart,
+    handleDragOver,
+    handleDrop,
+    createOpen,
+    editingTask,
+    deletingTaskId,
+    viewingTask,
+    openCreate,
+    closeCreate,
+    handleEdit,
+    closeEdit,
+    handleDeleteRequest,
+    handleDeleteConfirm,
+    closeDelete,
+    handleView,
+    closeView,
+    clearFilters,
+  } = useKanbanBoard();
+
+  const { data: members = [] } = useProjectMembers(
     selectedProjectId !== 'all' ? selectedProjectId : undefined
   );
-  const { draggedTask, handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(
-    (id, status) => updateTask({ id, data: { status } })
-  );
-  const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
-  const [viewingTask, setViewingTask] = useState<Task | null>(null);
-
-  // Filter tasks by search
-  const filteredTasks = useMemo(() => {
-    if (!searchQuery.trim()) return tasks;
-    const q = searchQuery.toLowerCase();
-    return tasks.filter(
-      (t) => t.title.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q)
-    );
-  }, [tasks, searchQuery]);
-
-  const columns = useMemo(
-    () =>
-      KANBAN_COLUMNS.map((col) => ({
-        ...col,
-        tasks: filteredTasks.filter((t) => t.status === col.id),
-      })),
-    [filteredTasks]
-  );
-
-  const hasNoTasks = tasks.length === 0;
-
-  if (isLoading) return <KanbanBoardSkeleton />;
-  if (isError) return <ErrorState onRetry={() => window.location.reload()} />;
 
   return (
     <>
       <div className="space-y-4">
-        {/* Toolbar – Mobile First */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-              <SelectTrigger className="h-9 w-35 rounded-lg text-xs">
-                <SelectValue placeholder="همه پروژه‌ها" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه پروژه‌ها</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Toolbar */}
+        <KanbanToolbar
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          setSelectedProjectId={setSelectedProjectId}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
+          assigneeFilter={assigneeFilter}
+          setAssigneeFilter={setAssigneeFilter}
+          combinedSort={combinedSort}
+          setCombinedSort={setCombinedSort}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          onCreateClick={openCreate}
+          members={members}
+          searchQuery={searchQuery}
+          onClearFilters={clearFilters}
+        />
 
-            <SearchInput placeholder="جستجوی تسک..." onSearch={setSearchQuery} className="flex-1" />
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <div className="bg-muted/50 flex items-center gap-1 rounded-xl p-1">
-              <Button
-                variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('kanban')}
-                className="rounded-lg"
-              >
-                <Columns className="ml-2 h-4 w-4" />
-                <span className="hidden sm:inline">کانبان</span>
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="rounded-lg"
-              >
-                <List className="ml-2 h-4 w-4" />
-                <span className="hidden sm:inline">لیست</span>
-              </Button>
-            </div>
-            <Button
-              onClick={() => setCreateOpen(true)}
-              className="shadow-primary/20 gap-2 shadow-lg"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">تسک جدید</span>
-            </Button>
-          </div>
-        </div>
-        {/* Board */}
-        {hasNoTasks && !searchQuery ? (
+        {/* Content */}
+        {isLoading ? (
+          <KanbanBoardSkeleton />
+        ) : isError ? (
+          <ErrorState onRetry={() => window.location.reload()} />
+        ) : hasNoTasks && !searchQuery ? (
           <EmptyState
             icon={Columns}
             title="تسکی وجود ندارد"
@@ -127,13 +104,12 @@ export function KanbanBoard() {
               selectedProjectId !== 'all' ? 'این پروژه تسکی ندارد' : 'هنوز هیچ تسکی ایجاد نشده'
             }
             action={
-              <Button onClick={() => setCreateOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                ایجاد اولین تسک
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="h-4 w-4" /> ایجاد اولین تسک
               </Button>
             }
           />
-        ) : filteredTasks.length === 0 ? (
+        ) : tasks.length === 0 ? (
           <EmptyState
             icon={Columns}
             title="نتیجه‌ای یافت نشد"
@@ -150,9 +126,9 @@ export function KanbanBoard() {
                   onDrop={() => handleDrop(col.id as Task['status'])}
                   draggedTask={draggedTask}
                   onDragStart={handleDragStart}
-                  onEditTask={setEditingTask}
-                  onDeleteTask={setDeletingTaskId}
-                  onViewTask={setViewingTask}
+                  onEditTask={handleEdit}
+                  onDeleteTask={handleDeleteRequest}
+                  onViewTask={handleView}
                 />
               ))}
             </div>
@@ -160,7 +136,7 @@ export function KanbanBoard() {
         ) : (
           <div className="space-y-3">
             <AnimatePresence mode="popLayout">
-              {filteredTasks.map((task) => (
+              {tasks.map((task) => (
                 <motion.div
                   key={task.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -171,48 +147,30 @@ export function KanbanBoard() {
                   <TaskCard
                     task={task}
                     onDragStart={handleDragStart}
-                    onEdit={setEditingTask}
-                    onDelete={setDeletingTaskId}
-                    onView={setViewingTask}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteRequest}
+                    onView={handleView}
                   />
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         )}
-        {/* Create Task Dialog */}
-        <TaskDialog open={createOpen} onOpenChange={setCreateOpen} />
-        {/* Edit Task Dialog */}
-        <TaskDialog
-          task={editingTask ?? undefined}
-          open={!!editingTask}
-          onOpenChange={(open) => {
-            if (!open) setEditingTask(null);
-          }}
-        />
-        {/* Delete Confirmation */}
-        <DeleteConfirmDialog
-          open={!!deletingTaskId}
-          onOpenChange={() => setDeletingTaskId(null)}
-          title="حذف تسک"
-          description="از حذف این تسک مطمئن هستید؟"
-          onConfirm={() => {
-            if (deletingTaskId) {
-              deleteTask(deletingTaskId);
-              setDeletingTaskId(null);
-            }
-          }}
-          isDeleting={isDeleting}
-        />
       </div>
+
+      {/* Dialogs */}
+      <TaskDialog open={createOpen} onOpenChange={closeCreate} />
+      <TaskDialog task={editingTask ?? undefined} open={!!editingTask} onOpenChange={closeEdit} />
+      <DeleteConfirmDialog
+        open={!!deletingTaskId}
+        onOpenChange={closeDelete}
+        title="حذف تسک"
+        description="از حذف این تسک مطمئن هستید؟"
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
       {viewingTask && (
-        <TaskDetailSheet
-          task={viewingTask}
-          open={!!viewingTask}
-          onOpenChange={(open) => {
-            if (!open) setViewingTask(null);
-          }}
-        />
+        <TaskDetailSheet task={viewingTask} open={!!viewingTask} onOpenChange={closeView} />
       )}
     </>
   );

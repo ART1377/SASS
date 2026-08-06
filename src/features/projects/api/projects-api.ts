@@ -2,8 +2,12 @@ import { apiClient } from '@/shared/config/axios';
 import type { CreateProjectInput, Project, UpdateProjectInput } from '../types';
 
 export const projectsApi = {
-  getAll: async (): Promise<Project[]> => {
-    const response = await apiClient.get<Project[]>('/projects');
+  getAll: async (params?: {
+    q?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<Project[]> => {
+    const response = await apiClient.get<Project[]>('/projects', { params });
     return response.data;
   },
 

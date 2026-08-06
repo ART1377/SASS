@@ -1,11 +1,13 @@
 'use client';
 
 import { ActionDropdown } from '@/shared/components/action-dropdown';
+import { OnlineBadge } from '@/shared/components/online-badge';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { getInitials } from '@/shared/lib/utils';
+import { usePresence } from '@/shared/providers/presence-provider';
 import { Calendar, GripVertical, MessageSquare, Pencil, Trash2 } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { TASK_PRIORITY_LABELS } from '../constants';
@@ -30,6 +32,7 @@ export const TaskCard = memo(function TaskCard({
     { label: 'ویرایش', icon: Pencil, onClick: () => onEdit?.(task) },
     { label: 'حذف', icon: Trash2, onClick: () => onDelete?.(task.id), destructive: true },
   ];
+  const { isUserOnline } = usePresence();
 
   // Open detail sheet on card click
   const handleCardClick = useCallback(() => {
@@ -104,11 +107,14 @@ export const TaskCard = memo(function TaskCard({
             {task._count?.comments ?? 0}
           </div>
           {task.assignee && (
-            <Avatar className="ring-border h-6 w-6 ring-2">
-              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-                {getInitials(task.assignee.name)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="ring-border h-6 w-6 ring-2">
+                <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                  {getInitials(task.assignee.name)}
+                </AvatarFallback>
+              </Avatar>
+              <OnlineBadge isOnline={isUserOnline(task.assignee.id)} />
+            </div>
           )}
         </div>
       </CardContent>

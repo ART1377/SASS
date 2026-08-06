@@ -2,7 +2,15 @@ import { apiClient } from '@/shared/config/axios';
 import type { CreateTaskInput, Task, TaskComment, UpdateTaskInput } from '../types';
 
 export const tasksApi = {
-  getAll: async (params?: { projectId?: string; status?: string }): Promise<Task[]> => {
+  getAll: async (params?: {
+    projectId?: string;
+    status?: string;
+    priority?: string;
+    assigneeId?: string;
+    q?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }): Promise<Task[]> => {
     const response = await apiClient.get<Task[]>('/tasks', { params });
     return response.data;
   },

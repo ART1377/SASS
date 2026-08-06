@@ -10,9 +10,11 @@ export const queryKeys = {
     members: (projectId: string) => ['projects', projectId, 'members'] as const,
   },
   tasks: {
-    all: ['tasks'] as const,
-    byId: (id: string) => ['tasks', id] as const,
-    byProject: (projectId: string) => ['tasks', 'project', projectId] as const,
+    all: (filters?: Record<string, string | undefined>) =>
+      ['tasks', 'list', filters ?? {}] as const,
+    byId: (id: string) => ['tasks', 'detail', id] as const,
+    byProject: (projectId: string, filters?: Record<string, string | undefined>) =>
+      ['tasks', 'project', projectId, filters ?? {}] as const,
     comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
   },
   chat: {

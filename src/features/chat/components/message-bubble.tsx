@@ -20,6 +20,7 @@ interface MessageBubbleProps {
   isSelected?: boolean;
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
+  onCopy?: (content: string) => void;
 }
 
 export function MessageBubble({
@@ -36,8 +37,14 @@ export function MessageBubble({
   isSelected,
   onToggleSelect,
   onLongPress,
+  onCopy,
 }: MessageBubbleProps) {
   const isPending = message.status === 'sending' || message.status === 'failed';
+
+  const timeString = new Date(message.createdAt).toLocaleTimeString('fa-IR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <div className={cn('w-full', isHighlighted && 'bg-primary/20 rounded-2xl')}>
@@ -56,7 +63,9 @@ export function MessageBubble({
         }}
         className={cn(
           'group/bubble relative w-fit max-w-[75%] rounded-2xl px-3.5 py-2 transition-colors duration-700',
-          isOwn ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md',
+          isOwn
+            ? 'bg-primary text-primary-foreground rounded-br-md'
+            : 'bg-muted mr-auto rounded-bl-md',
           isHighlighted && 'bg-primary/80'
         )}
       >
@@ -120,6 +129,15 @@ export function MessageBubble({
 
         <p className="text-[13px] leading-relaxed">{message.content}</p>
 
+        <span
+          className={cn(
+            'shrink-0 text-[10px] select-none',
+            isOwn ? 'text-primary-foreground/50' : 'text-muted-foreground/50'
+          )}
+        >
+          {timeString}
+        </span>
+
         <MessageFooter
           message={message}
           isOwn={isOwn}
@@ -129,6 +147,7 @@ export function MessageBubble({
           onEdit={onEdit}
           onDelete={onDelete}
           onRetry={onRetry}
+          onCopy={onCopy}
         />
       </motion.div>
     </div>

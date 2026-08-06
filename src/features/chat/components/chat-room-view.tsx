@@ -4,11 +4,9 @@ import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
 import { AnimatePresence } from 'framer-motion';
-import { CheckSquare, Hash, Users } from 'lucide-react';
+import { CheckSquare, Hash, Trash2, Users } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useChat } from '../hooks/use-chat';
-import { useForwardMessage } from '../hooks/use-forward-message';
 import type { ChatRoom, ReplyInfo } from '../types';
 import { ChatInput, type ChatInputHandle } from './chat-input';
 import { ChatMessages } from './chat-messages';
@@ -28,13 +26,15 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     currentUser,
     refetch,
     onlineCount,
-    deleteMessage,
+    deleteMessageWithToast,
+    bulkDeleteMessagesWithToast,
+    forwardMessagesWithToast,
+    copyMessageWithToast,
     updateMessage,
     hasOlderMessages,
     isLoadingOlder,
     loadOlderMessages,
   } = useChat(chatRoom.id);
-  const { forwardMessage } = useForwardMessage();
 
   const chatInputRef = useRef<ChatInputHandle>(null);
   const [replyTo, setReplyTo] = useState<ReplyInfo | null>(null);
@@ -47,6 +47,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [forwardOpen, setForwardOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const handleEdit = useCallback((messageId: string, content: string) => {
     setEditingMessage({ id: messageId, content });
@@ -57,11 +58,11 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   }, []);
 
   const handleDeleteConfirm = useCallback(() => {
-    if (deleteTarget) {
-      deleteMessage(deleteTarget);
-      setDeleteTarget(null);
-    }
-  }, [deleteTarget, deleteMessage]);
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    deleteMessageWithToast(target);
+  }, [deleteTarget, deleteMessageWithToast]);
 
   const handleReply = useCallback((message: ReplyInfo) => {
     setReplyTo(message);
@@ -105,28 +106,26 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   }, []);
 
   const handleForward = useCallback(
-    async (targetRoomId: string) => {
+    (targetRoomId: string) => {
       if (selectedIds.size === 0) return;
       const msgsToForward = messages.filter((m) => selectedIds.has(m.id));
-      try {
-        for (const msg of msgsToForward) {
-          await forwardMessage(targetRoomId, msg);
-        }
-        toast.success(`${msgsToForward.length} پیام ارسال شد`);
-      } catch {
-        toast.error('خطا در ارسال پیام‌ها');
-      }
+      forwardMessagesWithToast(targetRoomId, msgsToForward);
       exitSelectMode();
     },
-    [selectedIds, messages, exitSelectMode, forwardMessage]
+    [selectedIds, messages, exitSelectMode, forwardMessagesWithToast]
   );
+
+  const handleBulkDeleteConfirm = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setBulkDeleteOpen(false);
+    exitSelectMode();
+    bulkDeleteMessagesWithToast(ids);
+  }, [selectedIds, bulkDeleteMessagesWithToast, exitSelectMode]);
 
   const handleReplyClick = useCallback((messageId: string) => {
     setScrollToMessageId(null);
-    // Use setTimeout to ensure React processes the null first, then the new ID
-    setTimeout(() => {
-      setScrollToMessageId(messageId);
-    }, 0);
+    setTimeout(() => setScrollToMessageId(messageId), 0);
   }, []);
 
   if (isError) {
@@ -195,6 +194,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
         onLongPress={enterSelectMode}
+        onCopy={copyMessageWithToast}
       />
 
       {selectMode ? (
@@ -205,6 +205,15 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
           <span className="text-muted-foreground flex-1 text-center text-sm">
             {selectedIds.size} انتخاب شده
           </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setBulkDeleteOpen(true)}
+            disabled={selectedIds.size === 0}
+          >
+            <Trash2 className="ml-2 h-4 w-4" />
+            حذف
+          </Button>
           <Button size="sm" onClick={() => setForwardOpen(true)} disabled={selectedIds.size === 0}>
             <CheckSquare className="ml-2 h-4 w-4" />
             ارسال
@@ -235,6 +244,14 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         title="حذف پیام"
         description="از حذف این پیام مطمئن هستید؟ این عمل قابل بازگشت نیست."
         onConfirm={handleDeleteConfirm}
+      />
+
+      <DeleteConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="حذف پیام‌ها"
+        description={`از حذف ${selectedIds.size} پیام انتخاب شده مطمئن هستید؟ این عمل قابل بازگشت نیست.`}
+        onConfirm={handleBulkDeleteConfirm}
       />
     </>
   );

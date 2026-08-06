@@ -1,20 +1,25 @@
 'use client';
 
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
-import { queryKeys } from '@/shared/lib/query-keys';
 import { useQuery } from '@tanstack/react-query';
 import { projectsApi } from '../api/projects-api';
 import type { UpdateProjectInput } from '../types';
 
-export function useProjects() {
+interface UseProjectsFilters {
+  q?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+export function useProjects(filters: UseProjectsFilters = {}) {
   const projectsQuery = useQuery({
-    queryKey: queryKeys.projects.all,
-    queryFn: projectsApi.getAll,
+    queryKey: ['projects', { ...filters }], // cache per filter combination
+    queryFn: () => projectsApi.getAll(filters),
   });
 
   const createProjectMutation = useMutationWithToast({
     mutationFn: projectsApi.create,
-    queryKey: queryKeys.projects.all,
+    queryKey: ['projects'], // broad invalidation – clears all cached projects lists
     successMessage: 'پروژه با موفقیت ایجاد شد',
     errorMessage: 'خطا در ایجاد پروژه',
   });
@@ -22,14 +27,14 @@ export function useProjects() {
   const updateProjectMutation = useMutationWithToast({
     mutationFn: ({ id, data }: { id: string; data: UpdateProjectInput }) =>
       projectsApi.update(id, data),
-    queryKey: queryKeys.projects.all,
+    queryKey: ['projects'],
     successMessage: 'پروژه با موفقیت به‌روزرسانی شد',
     errorMessage: 'خطا در به‌روزرسانی پروژه',
   });
 
   const deleteProjectMutation = useMutationWithToast({
     mutationFn: projectsApi.delete,
-    queryKey: queryKeys.projects.all,
+    queryKey: ['projects'],
     successMessage: 'پروژه با موفقیت حذف شد',
     errorMessage: 'خطا در حذف پروژه',
   });
@@ -37,7 +42,7 @@ export function useProjects() {
   const inviteMemberMutation = useMutationWithToast({
     mutationFn: ({ projectId, email }: { projectId: string; email: string }) =>
       projectsApi.inviteMember(projectId, email),
-    queryKey: queryKeys.projects.all, // also invalidates members
+    queryKey: ['projects'],
     successMessage: 'عضو با موفقیت دعوت شد',
     errorMessage: 'خطا در دعوت عضو',
   });

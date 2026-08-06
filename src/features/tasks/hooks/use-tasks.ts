@@ -3,26 +3,42 @@
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { useOptimisticMutation } from '@/shared/hooks/use-optimistic-mutation';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tasksApi } from '../api/tasks-api';
 import type { Task, UpdateTaskInput } from '../types';
 
-export function useTasks(projectId?: string) {
+interface UseTasksFilters {
+  projectId?: string;
+  status?: string;
+  priority?: string;
+  assigneeId?: string;
+  q?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+export function useTasks(filters: UseTasksFilters = {}) {
+  const queryClient = useQueryClient();
+  const { projectId, ...restFilters } = filters;
+
   const tasksQuery = useQuery({
-    queryKey: projectId ? queryKeys.tasks.byProject(projectId) : queryKeys.tasks.all,
-    queryFn: () => tasksApi.getAll(projectId ? { projectId } : undefined),
+    queryKey: projectId
+      ? queryKeys.tasks.byProject(projectId, restFilters)
+      : queryKeys.tasks.all(restFilters),
+    queryFn: () => tasksApi.getAll(filters),
   });
 
+  // Mutations should invalidate all task queries, regardless of filters
   const createTaskMutation = useMutationWithToast({
     mutationFn: tasksApi.create,
-    queryKey: queryKeys.tasks.all,
+    queryKey: ['tasks'], // Broad invalidation
     successMessage: 'تسک با موفقیت ایجاد شد',
     errorMessage: 'خطا در ایجاد تسک',
   });
 
   const updateTaskMutation = useOptimisticMutation<Task, { id: string; data: UpdateTaskInput }>({
     mutationFn: ({ id, data }) => tasksApi.update(id, data),
-    queryKey: queryKeys.tasks.all,
+    queryKey: ['tasks'], // Broad invalidation
     successMessage: 'تسک به‌روزرسانی شد',
     errorMessage: 'خطا در به‌روزرسانی تسک',
     onOptimisticUpdate: (oldData, { id, data }) => {
@@ -33,7 +49,7 @@ export function useTasks(projectId?: string) {
 
   const deleteTaskMutation = useMutationWithToast({
     mutationFn: tasksApi.delete,
-    queryKey: queryKeys.tasks.all,
+    queryKey: ['tasks'], // Broad invalidation
     successMessage: 'تسک حذف شد',
     errorMessage: 'خطا در حذف تسک',
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { OnlineBadge } from '@/shared/components/online-badge';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import {
@@ -30,11 +31,14 @@ export function SettingsView() {
       <Card className="overflow-hidden border-0 shadow-lg">
         <div className="from-primary/5 via-primary/10 bg-linear-to-r to-transparent p-6">
           <div className="flex items-center gap-4">
-            <Avatar className="ring-background h-16 w-16 shadow-xl ring-4 md:h-20 md:w-20">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold md:text-2xl">
-                {getInitials(user.name || 'کاربر')}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="ring-background h-16 w-16 shadow-xl ring-4 md:h-20 md:w-20">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold md:text-2xl">
+                  {getInitials(user.name || 'کاربر')}
+                </AvatarFallback>
+              </Avatar>
+              <OnlineBadge isOnline={true} /> {/* always online for self */}
+            </div>
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-lg font-bold md:text-xl">{user.name}</h2>
               <p className="text-muted-foreground truncate text-sm">{user.email}</p>

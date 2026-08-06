@@ -2,7 +2,6 @@
 
 import { cn } from '@/shared/lib/utils';
 import { AlertCircle, Copy, Loader2, Pencil, Reply, Trash2 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import type { ChatMessage, ReplyInfo } from '../types';
 
 interface MessageFooterProps {
@@ -14,6 +13,7 @@ interface MessageFooterProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onRetry?: (clientId: string) => void;
+  onCopy?: (content: string) => void;
 }
 
 export function MessageFooter({
@@ -25,23 +25,14 @@ export function MessageFooter({
   onEdit,
   onDelete,
   onRetry,
+  onCopy,
 }: MessageFooterProps) {
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(message.content);
-      toast.success('پیام کپی شد');
-    } catch {
-      toast.error('خطا در کپی پیام');
-    }
-  };
-
   return (
     <div className={cn('mt-0.5 flex items-center gap-1', isOwn ? 'justify-end' : 'justify-start')}>
-      {message.editedAt && <span className="text-[10px] opacity-50">ویرایش شده</span>}
-
+      {message.editedAt && (
+        <span className="me-auto min-w-fit text-[10px] opacity-50">ویرایش شده</span>
+      )}
       {message.status === 'sending' && <Loader2 className="h-3 w-3 animate-spin opacity-60" />}
-
       {message.status === 'failed' && (
         <button
           onClick={(e) => {
@@ -58,8 +49,11 @@ export function MessageFooter({
       {!isPending && !selectMode && (
         <>
           <button
-            onClick={handleCopy}
-            className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCopy?.(message.content);
+            }}
+            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
             aria-label="کپی"
           >
             <Copy className="h-3 w-3" />
@@ -73,7 +67,7 @@ export function MessageFooter({
                 sender: { id: message.sender.id, name: message.sender.name },
               });
             }}
-            className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
+            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
             aria-label="پاسخ"
           >
             <Reply className="h-3 w-3" />
@@ -85,7 +79,7 @@ export function MessageFooter({
                   e.stopPropagation();
                   onEdit?.(message.id, message.content);
                 }}
-                className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-blue-500 hover:opacity-80 dark:hover:bg-white/10"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-blue-500 hover:opacity-80 dark:hover:bg-white/10"
                 aria-label="ویرایش"
               >
                 <Pencil className="h-3 w-3" />
@@ -95,7 +89,7 @@ export function MessageFooter({
                   e.stopPropagation();
                   onDelete?.(message.id);
                 }}
-                className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-red-500 hover:opacity-80 dark:hover:bg-white/10"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-red-500 hover:opacity-80 dark:hover:bg-white/10"
                 aria-label="حذف"
               >
                 <Trash2 className="h-3 w-3" />

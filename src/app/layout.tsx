@@ -1,6 +1,7 @@
 import { ToastConfig } from '@/shared/components/toast-config';
 import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { AuthProvider } from '@/shared/providers/auth-provider';
+import { PresenceProvider } from '@/shared/providers/presence-provider';
 import { QueryProvider } from '@/shared/providers/query-provider';
 import { SocketProvider } from '@/shared/providers/socket-provider';
 import { ThemeProvider } from '@/shared/providers/theme-provider';
@@ -41,7 +42,9 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <SocketProvider>
-                <TooltipProvider>{children}</TooltipProvider>
+                <PresenceProvider>
+                  <TooltipProvider>{children}</TooltipProvider>
+                </PresenceProvider>
               </SocketProvider>
               <ToastConfig />
             </AuthProvider>

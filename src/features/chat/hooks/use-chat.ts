@@ -5,11 +5,13 @@ import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
 import { useSocket } from '@/shared/providers/socket-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { chatApi } from '../api/chat-api';
 import type { ChatMessage, ChatRoom, ReplyInfo, RoomUpdatedPayload } from '../types';
 import { useChatAPI } from './use-chat-api';
 import { useChatSocket } from './use-chat-socket';
+import { useForwardMessage } from './use-forward-message';
 
 function createClientId() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -17,17 +19,15 @@ function createClientId() {
     : `local_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
-// ─── Main Chat Hook ─────────────────────────────
 export function useChat(roomId: string) {
   const { user } = useAuth();
   const api = useChatAPI(roomId);
   const socket = useChatSocket(roomId);
+  const { forwardMessage } = useForwardMessage();
 
-  // Messages currently in-flight from this client, keyed by clientId.
   const [pending, setPending] = useState<Map<string, ChatMessage>>(new Map());
   const registeredRef = useRef(false);
 
-  // Register presence once the socket connects and the user is known.
   useEffect(() => {
     if (socket.isConnected && user?.id && !registeredRef.current) {
       socket.registerUser({
@@ -40,8 +40,6 @@ export function useChat(roomId: string) {
     if (!socket.isConnected) registeredRef.current = false;
   }, [socket.isConnected, user, socket]);
 
-  // Reconcile: once a live/broadcast message with a matching clientId shows up,
-  // drop the optimistic placeholder for it.
   useEffect(() => {
     if (socket.liveMessages.length === 0 || pending.size === 0) return;
     setPending((prev) => {
@@ -98,8 +96,6 @@ export function useChat(roomId: string) {
         replyTo,
         clientId,
       });
-      // Success path: the reconciliation effect above removes the placeholder
-      // once the authoritative broadcast arrives (usually within milliseconds).
     } catch {
       setPending((prev) => {
         const next = new Map(prev);
@@ -131,6 +127,57 @@ export function useChat(roomId: string) {
       });
   };
 
+  // ── Single delete with toast ──
+  const deleteMessageWithToast = useCallback(
+    async (messageId: string) => {
+      try {
+        await api.deleteMessageAsync(messageId);
+        toast.success('پیام حذف شد');
+      } catch {
+        toast.error('خطا در حذف پیام');
+      }
+    },
+    [api]
+  );
+
+  // ── Bulk delete with toast ──
+  const bulkDeleteMessagesWithToast = useCallback(
+    async (messageIds: string[]) => {
+      try {
+        await Promise.all(messageIds.map((id) => api.deleteMessageAsync(id)));
+        toast.success(`${messageIds.length} پیام حذف شد`);
+      } catch {
+        toast.error('خطا در حذف پیام‌ها');
+      }
+    },
+    [api]
+  );
+
+  // ── Forward messages with toast ──
+  const forwardMessagesWithToast = useCallback(
+    async (targetRoomId: string, messagesToForward: ChatMessage[]) => {
+      try {
+        for (const msg of messagesToForward) {
+          await forwardMessage(targetRoomId, msg);
+        }
+        toast.success(`${messagesToForward.length} پیام ارسال شد`);
+      } catch {
+        toast.error('خطا در ارسال پیام‌ها');
+      }
+    },
+    [forwardMessage]
+  );
+
+  // ── Copy message with toast ──
+  const copyMessageWithToast = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success('پیام کپی شد');
+    } catch {
+      toast.error('خطا در کپی پیام');
+    }
+  }, []);
+
   return {
     messages,
     isLoading: api.isLoading,
@@ -145,6 +192,11 @@ export function useChat(roomId: string) {
     refetch: api.refetch,
     onlineCount: socket.onlineCount,
     deleteMessage: api.deleteMessage,
+    deleteMessageAsync: api.deleteMessageAsync,
+    deleteMessageWithToast,
+    bulkDeleteMessagesWithToast,
+    forwardMessagesWithToast,
+    copyMessageWithToast,
     updateMessage: api.updateMessage,
     hasOlderMessages: api.hasOlderMessages,
     isLoadingOlder: api.isLoadingOlder,

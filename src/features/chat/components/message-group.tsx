@@ -1,7 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
-import { cn, formatDateTime, getInitials } from '@/shared/lib/utils';
+import { cn, getInitials } from '@/shared/lib/utils';
 import { motion } from 'framer-motion';
 import type { MessageGroup, ReplyInfo } from '../types';
 import { MessageBubble } from './message-bubble';
@@ -16,11 +16,11 @@ interface MessageGroupProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onRetry?: (clientId: string) => void;
-  // ─── Forward props ────────────────────────
   selectMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
+  onCopy?: (content: string) => void;
 }
 
 export function MessageGroupBubble({
@@ -37,6 +37,7 @@ export function MessageGroupBubble({
   selectedIds,
   onToggleSelect,
   onLongPress,
+  onCopy,
 }: MessageGroupProps) {
   return (
     <motion.div
@@ -73,22 +74,13 @@ export function MessageGroupBubble({
             onEdit={onEdit}
             onDelete={onDelete}
             onRetry={onRetry}
-            // ─── Forward props ──────────────
             selectMode={selectMode}
             isSelected={selectedIds?.has(msg.id)}
             onToggleSelect={onToggleSelect}
             onLongPress={onLongPress}
+            onCopy={onCopy}
           />
         ))}
-
-        <p
-          className={cn(
-            'text-muted-foreground/50 px-1 text-[10px]',
-            group.isOwn ? 'text-left' : 'text-right'
-          )}
-        >
-          {formatDateTime(group.messages[group.messages.length - 1].createdAt)}
-        </p>
       </div>
     </motion.div>
   );

@@ -1,36 +1,53 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const q = searchParams.get('q');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+
+    const where: Prisma.ProjectWhereInput = {
+      OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id } } }],
+    };
+
+    if (q && q.trim().length >= 2) {
+      where.AND = [
+        {
+          OR: [{ name: { contains: q.trim() } }, { description: { contains: q.trim() } }],
+        },
+      ];
+    }
+
+    const orderBy: Prisma.ProjectOrderByWithRelationInput[] = [];
+    const direction: Prisma.SortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+    switch (sortBy) {
+      case 'name':
+        orderBy.push({ name: direction });
+        break;
+      case 'updatedAt':
+        orderBy.push({ updatedAt: direction });
+        break;
+      default:
+        orderBy.push({ createdAt: direction });
+    }
+
     const projects = await prisma.project.findMany({
-      where: {
-        OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id } } }],
-      },
+      where,
       include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-        _count: {
-          select: {
-            tasks: true,
-            members: true,
-          },
-        },
+        owner: { select: { id: true, name: true, avatar: true } },
+        _count: { select: { tasks: true, members: true } },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy,
     });
 
     return NextResponse.json(projects);

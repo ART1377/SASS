@@ -16,9 +16,15 @@ interface SendAck {
   error?: string;
 }
 
+interface DeleteAck {
+  success?: boolean;
+  error?: string;
+}
+
 export function useChatSocket(roomId: string) {
   const { socket, isConnected } = useSocket();
   const [liveMessages, setLiveMessages] = useState<SocketMessage[]>([]);
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const joinedRef = useRef(false);
@@ -33,6 +39,19 @@ export function useChatSocket(roomId: string) {
 
     const onMessage = (msg: SocketMessage) => {
       setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+    };
+
+    // Broadcast for any deletion in this room, including our own — this is
+    // what actually clears the message from every connected client without
+    // requiring a reload.
+    const onMessageDeleted = (data: { roomId: string; messageId: string }) => {
+      if (data.roomId !== roomId) return;
+      setDeletedMessageIds((prev) => {
+        if (prev.has(data.messageId)) return prev;
+        const next = new Set(prev);
+        next.add(data.messageId);
+        return next;
+      });
     };
 
     const onTypingStart = (data: TypingUser & { roomId: string }) => {
@@ -52,12 +71,14 @@ export function useChatSocket(roomId: string) {
     const onOnlineCount = (count: number) => setOnlineCount(count);
 
     socket.on('message:new', onMessage);
+    socket.on('message:deleted', onMessageDeleted);
     socket.on('typing:user_started', onTypingStart);
     socket.on('typing:user_stopped', onTypingStop);
     socket.on('room:online_count', onOnlineCount);
 
     return () => {
       socket.off('message:new', onMessage);
+      socket.off('message:deleted', onMessageDeleted);
       socket.off('typing:user_started', onTypingStart);
       socket.off('typing:user_stopped', onTypingStop);
       socket.off('room:online_count', onOnlineCount);
@@ -65,6 +86,7 @@ export function useChatSocket(roomId: string) {
       socket.emit('room:leave', roomId);
       joinedRef.current = false;
       setLiveMessages([]);
+      setDeletedMessageIds(new Set());
       setTypingUsers([]);
       setOnlineCount(0);
     };
@@ -105,6 +127,25 @@ export function useChatSocket(roomId: string) {
     [socket, isConnected, roomId]
   );
 
+  const deleteMessage = useCallback(
+    (messageId: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        if (!socket || !isConnected) {
+          reject(new Error('اتصال برقرار نیست'));
+          return;
+        }
+        socket.emit('message:delete', { roomId, messageId }, (ack: DeleteAck) => {
+          if (ack?.error) {
+            reject(new Error(ack.error));
+            return;
+          }
+          resolve();
+        });
+      });
+    },
+    [socket, isConnected, roomId]
+  );
+
   const startTyping = useCallback(() => {
     socket?.emit('typing:start', { roomId });
   }, [socket, roomId]);
@@ -122,9 +163,11 @@ export function useChatSocket(roomId: string) {
 
   return {
     liveMessages,
+    deletedMessageIds,
     typingUsers,
     onlineCount,
     send,
+    deleteMessage,
     startTyping,
     stopTyping,
     registerUser,

@@ -3,6 +3,8 @@ import { prisma } from '@/shared/lib/prisma';
 import { sendSSENotification } from '@/shared/lib/sse';
 import { NextResponse } from 'next/server';
 
+import type { Prisma } from '@prisma/client';
+
 export async function GET(request: Request) {
   try {
     const session = await auth();
@@ -13,29 +15,48 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
+    const assigneeId = searchParams.get('assigneeId');
+    const search = searchParams.get('q');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    const where: any = {};
+    // Build the where clause
+    const where: Prisma.TaskWhereInput = {};
 
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
+    if (priority) where.priority = priority;
+    if (assigneeId) where.assigneeId = assigneeId;
+
+    if (search) {
+      where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
+    }
+
+    // Determine sort order
+    const orderBy: Prisma.TaskOrderByWithRelationInput[] = [];
+    const direction: Prisma.SortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+
+    switch (sortBy) {
+      case 'dueDate':
+        orderBy.push({ dueDate: { sort: direction, nulls: 'last' } });
+        break;
+      case 'priority':
+        orderBy.push({ priority: direction }, { createdAt: 'desc' });
+        break;
+      default:
+        orderBy.push({ createdAt: direction });
+    }
 
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: {
-          select: { id: true, name: true, avatar: true },
-        },
-        creator: {
-          select: { id: true, name: true, avatar: true },
-        },
-        project: {
-          select: { id: true, name: true },
-        },
-        _count: {
-          select: { comments: true },
-        },
+        assignee: { select: { id: true, name: true, avatar: true } },
+        creator: { select: { id: true, name: true, avatar: true } },
+        project: { select: { id: true, name: true } },
+        _count: { select: { comments: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     });
 
     return NextResponse.json(tasks);
