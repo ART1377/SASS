@@ -62,7 +62,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           key={card.title}
           className="card-hover group relative overflow-hidden border-0 shadow-lg"
         >
-          <div className="to-muted/50 absolute inset-0 bg-gradient-to-br from-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          <div className="to-muted/50 absolute inset-0 bg-linear-to-br from-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-muted-foreground text-sm font-medium">
               {card.title}
