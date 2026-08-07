@@ -43,9 +43,8 @@ export function useKanbanBoard() {
   const { tasks, isLoading, isError, updateTask, deleteTask, isDeleting } = useTasks(filters);
 
   // ── Drag & drop ──
-  const { draggedTask, handleDragStart, handleDragOver, handleDrop } = useTaskDragDrop(
-    (id, status) => updateTask({ id, data: { status } })
-  );
+  const { draggedTask, handleDragStart, handleDragOver, handleDrop, handleDragEnd } =
+    useTaskDragDrop((id, status) => updateTask({ id, data: { status } }));
 
   // ── Dialogs state ──
   const [createOpen, setCreateOpen] = useState(false);
@@ -144,6 +143,7 @@ export function useKanbanBoard() {
     handleDragStart,
     handleDragOver,
     handleDrop,
+    handleDragEnd,
 
     // dialogs
     createOpen,

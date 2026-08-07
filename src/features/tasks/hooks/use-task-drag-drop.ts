@@ -20,11 +20,18 @@ export function useTaskDragDrop(onUpdateTask: (id: string, status: Task['status'
       if (task && task.status !== status) {
         onUpdateTask(task.id, status);
       }
+      // Always clear drag state, even if dropped on same column
       draggedTaskRef.current = null;
       setDraggedTask(null);
     },
     [onUpdateTask]
   );
 
-  return { draggedTask, handleDragStart, handleDragOver, handleDrop };
+  // Add drag end handler to clear state when drag is cancelled
+  const handleDragEnd = useCallback(() => {
+    draggedTaskRef.current = null;
+    setDraggedTask(null);
+  }, []);
+
+  return { draggedTask, handleDragStart, handleDragOver, handleDrop, handleDragEnd };
 }

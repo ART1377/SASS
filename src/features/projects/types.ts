@@ -1,3 +1,17 @@
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: string;
+  joinedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+  };
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -10,6 +24,7 @@ export interface Project {
     name: string;
     avatar: string | null;
   };
+  members?: ProjectMember[];
   _count?: {
     tasks: number;
     members: number;

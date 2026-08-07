@@ -15,29 +15,66 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const body = await request.json();
     const { title, description, status, priority, assigneeIds, dueDate } = body;
 
-    // Get old task to compare changes
-    const oldTask = await prisma.task.findUnique({
+    // Get existing task with project members for permission check
+    const existingTask = await prisma.task.findUnique({
       where: { id },
-      select: {
-        title: true,
-        status: true,
+      include: {
+        creator: { select: { id: true } },
         assignees: { select: { userId: true } },
-        project: { select: { name: true } },
+        project: {
+          select: {
+            ownerId: true,
+            name: true,
+            members: { select: { userId: true, role: true } },
+          },
+        },
       },
     });
 
-    const data: any = {};
+    if (!existingTask) {
+      return NextResponse.json({ error: 'تسک یافت نشد' }, { status: 404 });
+    }
+
+    // ─── Permission Check ───
+    const isSystemAdmin = session.user.role === 'ADMIN';
+    const isProjectOwner = existingTask.project.ownerId === session.user.id;
+    const isProjectAdminOrManager = existingTask.project.members.some(
+      (m) => m.userId === session.user.id && (m.role === 'ADMIN' || m.role === 'MANAGER')
+    );
+    const isCreator = existingTask.creatorId === session.user.id;
+    const isAssignee = existingTask.assignees.some((a) => a.userId === session.user.id);
+
+    // Assignees can only change status, not other fields
+    const onlyChangingStatus =
+      Object.keys(body).every((key) => ['status', 'assigneeIds'].includes(key)) &&
+      status !== undefined;
+
+    if (!isSystemAdmin && !isProjectOwner && !isProjectAdminOrManager && !isCreator) {
+      // Assignees can only change status
+      if (isAssignee && onlyChangingStatus) {
+        // Allowed: assignee changing status
+      } else {
+        return NextResponse.json({ error: 'شما اجازه ویرایش این تسک را ندارید' }, { status: 403 });
+      }
+    }
+
+    // ─── Build update data ───
+    const data: Record<string, unknown> = {};
     if (title !== undefined) data.title = title;
     if (description !== undefined) data.description = description;
     if (status !== undefined) data.status = status;
     if (priority !== undefined) data.priority = priority;
     if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
 
-    // Handle assignees update
+    // Handle assignees update (only admins/managers/owner can change assignees)
     if (assigneeIds !== undefined) {
-      // Delete existing assignees
+      if (!isSystemAdmin && !isProjectOwner && !isProjectAdminOrManager && !isCreator) {
+        return NextResponse.json(
+          { error: 'شما اجازه تغییر واگذارشونده را ندارید' },
+          { status: 403 }
+        );
+      }
       await prisma.taskAssignee.deleteMany({ where: { taskId: id } });
-      // Create new ones
       if (assigneeIds.length > 0) {
         await prisma.taskAssignee.createMany({
           data: assigneeIds.map((userId: string) => ({ taskId: id, userId })),
@@ -61,8 +98,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     // ─── Notification: Status changed ───
-    if (status && oldTask && status !== oldTask.status) {
-      const oldAssigneeIds = oldTask.assignees.map((a) => a.userId);
+    if (status && status !== existingTask.status) {
+      const oldAssigneeIds = existingTask.assignees.map((a) => a.userId);
       const statusLabel = TASK_STATUS_LABELS[status] || status;
 
       for (const assigneeId of oldAssigneeIds) {
@@ -71,7 +108,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             data: {
               userId: assigneeId,
               title: 'بروزرسانی تسک',
-              message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+              message: `وضعیت تسک "${existingTask.title}" به "${statusLabel}" تغییر کرد`,
               type: 'TASK_UPDATED',
             },
           });
@@ -80,7 +117,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
             userId: assigneeId,
             type: 'TASK_UPDATED',
             title: 'بروزرسانی تسک',
-            message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+            message: `وضعیت تسک "${existingTask.title}" به "${statusLabel}" تغییر کرد`,
             data: { taskId: id, projectId: task.projectId },
           });
         }
@@ -88,8 +125,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     // ─── Notification: New assignees ───
-    if (assigneeIds !== undefined && oldTask) {
-      const oldAssigneeIds = new Set(oldTask.assignees.map((a) => a.userId));
+    if (assigneeIds !== undefined) {
+      const oldAssigneeIds = new Set(existingTask.assignees.map((a) => a.userId));
       const newAssignees = assigneeIds.filter((uid: string) => !oldAssigneeIds.has(uid));
 
       for (const assigneeId of newAssignees) {
@@ -129,6 +166,36 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     const { id } = await params;
+
+    // Get task with project members for permission check
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        project: {
+          select: {
+            ownerId: true,
+            members: { select: { userId: true, role: true } },
+          },
+        },
+      },
+    });
+
+    if (!task) {
+      return NextResponse.json({ error: 'تسک یافت نشد' }, { status: 404 });
+    }
+
+    // ─── Permission Check ───
+    const isSystemAdmin = session.user.role === 'ADMIN';
+    const isProjectOwner = task.project.ownerId === session.user.id;
+    const isProjectAdminOrManager = task.project.members.some(
+      (m) => m.userId === session.user.id && (m.role === 'ADMIN' || m.role === 'MANAGER')
+    );
+    const isCreator = task.creatorId === session.user.id;
+
+    if (!isSystemAdmin && !isProjectOwner && !isProjectAdminOrManager && !isCreator) {
+      return NextResponse.json({ error: 'شما اجازه حذف این تسک را ندارید' }, { status: 403 });
+    }
+
     await prisma.task.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

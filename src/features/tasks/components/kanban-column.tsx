@@ -1,5 +1,6 @@
 'use client';
 
+import { Project } from '@/features/projects/types';
 import { cn } from '@/shared/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Task } from '../types';
@@ -13,13 +14,16 @@ interface KanbanColumnProps {
     borderColor: string;
     tasks: Task[];
   };
+  project?: Project;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: () => void;
   draggedTask: Task | null;
   onDragStart: (task: Task) => void;
   onEditTask?: (task: Task) => void;
   onDeleteTask?: (taskId: string) => void;
-  onViewTask?: (task: Task) => void; // ← NEW
+  onViewTask?: (task: Task) => void;
+  userCanMoveTask?: (task: Task) => boolean;
+  onDragEnd?: () => void;
 }
 
 export function KanbanColumn({
@@ -30,9 +34,13 @@ export function KanbanColumn({
   onDragStart,
   onEditTask,
   onDeleteTask,
-  onViewTask, // ← NEW
+  onViewTask,
+  project,
+  userCanMoveTask,
+  onDragEnd,
 }: KanbanColumnProps) {
   const isTarget = draggedTask && draggedTask.status !== column.id;
+  const canDrop = isTarget && (!userCanMoveTask || userCanMoveTask(draggedTask));
 
   return (
     <div
@@ -40,10 +48,10 @@ export function KanbanColumn({
       aria-label={column.title}
       className={cn(
         'bg-muted/30 flex flex-col rounded-2xl border-2 border-dashed border-transparent p-3 transition-all duration-300',
-        isTarget && 'border-primary/50 bg-primary/10'
+        canDrop && 'border-primary/50 bg-primary/10'
       )}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+      onDragOver={canDrop ? onDragOver : undefined}
+      onDrop={canDrop ? onDrop : undefined}
     >
       {/* Column Header */}
       <div className="mb-3 flex items-center gap-2 px-1">
@@ -78,10 +86,12 @@ export function KanbanColumn({
               >
                 <TaskCard
                   task={task}
+                  project={project}
                   onDragStart={onDragStart}
                   onEdit={onEditTask}
                   onDelete={onDeleteTask}
                   onView={onViewTask}
+                  onDragEnd={onDragEnd}
                 />
               </motion.div>
             ))

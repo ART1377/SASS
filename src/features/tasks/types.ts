@@ -19,7 +19,7 @@ export interface Task {
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
-  assignees?: TaskAssignee[]; // Changed from single assignee
+  assignees?: TaskAssignee[]; // ← Must have this
   creator?: {
     id: string;
     name: string;

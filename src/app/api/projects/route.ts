@@ -45,6 +45,14 @@ export async function GET(request: Request) {
       where,
       include: {
         owner: { select: { id: true, name: true, avatar: true } },
+        members: {
+          // ← ADD THIS
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatar: true },
+            },
+          },
+        },
         _count: { select: { tasks: true, members: true } },
       },
       orderBy,
@@ -81,7 +89,6 @@ export async function POST(request: Request) {
             role: 'ADMIN',
           },
         },
-        // 👈 اتوماتیک Chat Room بساز
         chatRooms: {
           create: {
             name: `چت ${name}`,
@@ -96,17 +103,18 @@ export async function POST(request: Request) {
       },
       include: {
         owner: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
+          select: { id: true, name: true, avatar: true },
+        },
+        members: {
+          // ← ADD THIS
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatar: true },
+            },
           },
         },
         _count: {
-          select: {
-            tasks: true,
-            members: true,
-          },
+          select: { tasks: true, members: true },
         },
       },
     });

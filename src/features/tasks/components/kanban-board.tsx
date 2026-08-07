@@ -5,8 +5,10 @@ import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
+import { canMoveTasks } from '@/shared/lib/permissions';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Columns, Plus } from 'lucide-react';
+import { useCallback } from 'react';
 import { useGlobalCommentListener } from '../hooks/use-global-comment-listener';
 import { useKanbanBoard } from '../hooks/use-kanban-board';
 import { useProjectMembers } from '../hooks/use-project-members';
@@ -17,15 +19,6 @@ import { KanbanToolbar } from './kanban-toolbar';
 import { TaskCard } from './task-card';
 import { TaskDetailSheet } from './task-detail-sheet';
 import { TaskDialog } from './task-dialog';
-
-const SORT_OPTIONS = [
-  { value: 'createdAt_desc', label: 'جدیدترین' },
-  { value: 'createdAt_asc', label: 'قدیمی‌ترین' },
-  { value: 'dueDate_asc', label: 'موعد (نزدیک‌ترین)' },
-  { value: 'dueDate_desc', label: 'موعد (دورترین)' },
-  { value: 'priority_asc', label: 'اولویت (کم→زیاد)' },
-  { value: 'priority_desc', label: 'اولویت (زیاد→کم)' },
-] as const;
 
 export function KanbanBoard() {
   const {
@@ -65,15 +58,35 @@ export function KanbanBoard() {
     handleView,
     closeView,
     clearFilters,
+    handleDragEnd,
   } = useKanbanBoard();
 
   const { data: members = [] } = useProjectMembers(
     selectedProjectId !== 'all' ? selectedProjectId : undefined
   );
 
-  useGlobalCommentListener();
-
   const { user: currentUser } = useAuth();
+
+  const currentProject =
+    selectedProjectId !== 'all' ? projects.find((p) => p.id === selectedProjectId) : undefined;
+
+  const userCanMoveTask = useCallback(
+    (task: Task) => {
+      if (!currentUser) return false;
+      // When viewing all projects, allow drag for own tasks and assigned tasks
+      if (!currentProject) {
+        return (
+          task.creatorId === currentUser.id ||
+          task.assignees?.some((a) => a.userId === currentUser.id) ||
+          false
+        );
+      }
+      return canMoveTasks(currentUser, currentProject, task);
+    },
+    [currentProject, currentUser]
+  );
+
+  useGlobalCommentListener();
 
   return (
     <>
@@ -95,6 +108,7 @@ export function KanbanBoard() {
           members={members}
           searchQuery={searchQuery}
           onClearFilters={clearFilters}
+          user={currentUser}
         />
 
         {/* Content */}
@@ -135,6 +149,9 @@ export function KanbanBoard() {
                   onEditTask={handleEdit}
                   onDeleteTask={handleDeleteRequest}
                   onViewTask={handleView}
+                  project={currentProject}
+                  userCanMoveTask={userCanMoveTask}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
             </div>
@@ -156,6 +173,8 @@ export function KanbanBoard() {
                     onEdit={handleEdit}
                     onDelete={handleDeleteRequest}
                     onView={handleView}
+                    project={currentProject}
+                    onDragEnd={handleDragEnd}
                   />
                 </motion.div>
               ))}

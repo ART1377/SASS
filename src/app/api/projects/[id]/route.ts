@@ -65,12 +65,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       where: { id },
       data: { name, description },
       include: {
-        owner: {
-          select: { id: true, name: true, avatar: true },
+        owner: { select: { id: true, name: true, avatar: true } },
+        members: {
+          // ← ADD THIS
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, avatar: true },
+            },
+          },
         },
-        _count: {
-          select: { tasks: true, members: true },
-        },
+        _count: { select: { tasks: true, members: true } },
       },
     });
 
