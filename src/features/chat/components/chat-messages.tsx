@@ -33,6 +33,7 @@ interface Props {
   // New props for scroll button
   onScrollButtonVisible?: (visible: boolean) => void;
   onScrollToBottomReady?: (fn: () => void) => void;
+  getReadBy?: (messageId: string, excludeUserId?: string) => string[];
 }
 
 export function ChatMessages({
@@ -56,6 +57,7 @@ export function ChatMessages({
   onCopy,
   onScrollButtonVisible,
   onScrollToBottomReady,
+  getReadBy,
 }: Props) {
   const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
 
@@ -167,6 +169,7 @@ export function ChatMessages({
                 onToggleSelect={onToggleSelect}
                 onLongPress={onLongPress}
                 onCopy={onCopy}
+                getReadBy={getReadBy}
               />
             </div>
           );

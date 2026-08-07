@@ -2,7 +2,7 @@
 
 import { cn } from '@/shared/lib/utils';
 import { motion } from 'framer-motion';
-import { Forward } from 'lucide-react';
+import { Check, CheckCheck, Forward } from 'lucide-react';
 import type { ChatMessage, ReplyInfo } from '../types';
 import { MessageFooter } from './message-footer';
 
@@ -21,6 +21,8 @@ interface MessageBubbleProps {
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
+  readBy?: string[];
+  totalMembers?: number;
 }
 
 export function MessageBubble({
@@ -38,8 +40,11 @@ export function MessageBubble({
   onToggleSelect,
   onLongPress,
   onCopy,
+  readBy,
+  totalMembers,
 }: MessageBubbleProps) {
   const isPending = message.status === 'sending' || message.status === 'failed';
+  const isSent = !isPending && !message.status;
 
   const timeString = new Date(message.createdAt).toLocaleTimeString('fa-IR', {
     hour: '2-digit',
@@ -68,9 +73,12 @@ export function MessageBubble({
           isOwn
             ? 'bg-primary text-primary-foreground rounded-br-md'
             : 'bg-muted mr-auto rounded-bl-md',
-          isHighlighted && 'bg-primary/80'
+          isHighlighted && 'bg-primary/80',
+          selectMode && 'cursor-pointer',
+          isSelected && 'ring-primary ring-2'
         )}
       >
+        {/* Selection checkbox */}
         {selectMode && (
           <div
             className={cn(
@@ -78,7 +86,7 @@ export function MessageBubble({
               isSelected
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-muted-foreground/30 bg-background',
-              isOwn ? '-left-6' : '-right-6'
+              isOwn ? '-left-7' : '-right-7'
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -99,6 +107,7 @@ export function MessageBubble({
           </div>
         )}
 
+        {/* Forwarded indicator */}
         {message.forwardedFromName && (
           <p
             className={cn(
@@ -111,6 +120,7 @@ export function MessageBubble({
           </p>
         )}
 
+        {/* Reply preview */}
         {message.replyTo && (
           <button
             onClick={(e) => {
@@ -129,17 +139,59 @@ export function MessageBubble({
           </button>
         )}
 
-        <p className="text-[13px] leading-relaxed">{message.content}</p>
+        {/* Edited indicator */}
+        {message.editedAt && (
+          <span
+            className={cn(
+              'ml-1 inline-block text-[10px] opacity-50',
+              isOwn ? 'text-primary-foreground/50' : 'text-muted-foreground'
+            )}
+          >
+            (ویرایش شده)
+          </span>
+        )}
 
-        <span
-          className={cn(
-            'shrink-0 text-[10px] select-none',
-            isOwn ? 'text-primary-foreground/50' : 'text-muted-foreground/50'
+        {/* Message content */}
+        <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">
+          {message.content}
+        </p>
+
+        {/* Time + Status Row */}
+        <div className="mt-1 flex items-center justify-end gap-1">
+          <span
+            className={cn(
+              'shrink-0 text-[10px] select-none',
+              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground/60'
+            )}
+          >
+            {timeString}
+          </span>
+
+          {/* Telegram-style status icons (only for own messages) */}
+          {isOwn && (
+            <span className="ml-0.5 shrink-0">
+              {/* Sending (clock) — message hasn't been sent yet */}
+              {message.status === 'sending' && (
+                <span className="border-primary-foreground/40 inline-block h-3 w-3 animate-pulse rounded-full border" />
+              )}
+
+              {/* Failed — show error indicator */}
+              {message.status === 'failed' && <span className="text-[10px] text-red-400">⚠</span>}
+
+              {/* Sent but not seen — single check */}
+              {isSent && (!readBy || readBy.length === 0) && (
+                <Check className="text-primary-foreground/50 h-3.5 w-3.5" strokeWidth={2.5} />
+              )}
+
+              {/* Seen — double check (turns blue/white when read) */}
+              {isSent && readBy && readBy.length > 0 && (
+                <CheckCheck className="h-3.5 w-3.5 text-white/70" strokeWidth={2.5} />
+              )}
+            </span>
           )}
-        >
-          {timeString}
-        </span>
+        </div>
 
+        {/* Message Footer (actions) */}
         <MessageFooter
           message={message}
           isOwn={isOwn}

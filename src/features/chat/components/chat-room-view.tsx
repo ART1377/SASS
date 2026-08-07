@@ -35,6 +35,8 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     hasOlderMessages,
     isLoadingOlder,
     loadOlderMessages,
+    getReadBy,
+    registerMessageElement,
   } = useChat(chatRoom.id);
 
   const chatInputRef = useRef<ChatInputHandle>(null);
@@ -209,6 +211,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
           onCopy={copyMessageWithToast}
           onScrollButtonVisible={setShowScrollButton}
           onScrollToBottomReady={handleScrollToBottomReady}
+          getReadBy={getReadBy}
         />
 
         {/* Scroll button positioned absolutely within this relative container */}

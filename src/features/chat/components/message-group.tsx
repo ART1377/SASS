@@ -21,6 +21,7 @@ interface MessageGroupProps {
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
+  getReadBy?: (messageId: string, excludeUserId?: string) => string[];
 }
 
 export function MessageGroupBubble({
@@ -38,6 +39,7 @@ export function MessageGroupBubble({
   onToggleSelect,
   onLongPress,
   onCopy,
+  getReadBy,
 }: MessageGroupProps) {
   return (
     <motion.div
@@ -79,6 +81,7 @@ export function MessageGroupBubble({
             onToggleSelect={onToggleSelect}
             onLongPress={onLongPress}
             onCopy={onCopy}
+            readBy={getReadBy?.(msg.id, group.sender.id)}
           />
         ))}
       </div>

@@ -260,6 +260,56 @@ export function initSocketServer(server: NetServer) {
       }
     );
 
+    // ─── Message Read Receipts ─────────────────
+    socket.on(
+      'messages:read',
+      async (data: { roomId: string; messageIds: string[] }, ack?: Ack) => {
+        try {
+          const userId = socket.data.userId;
+          if (!userId) return ack?.({ error: 'ثبت‌نام نشده' });
+
+          if (!(await isRoomMember(data.roomId, userId))) {
+            return ack?.({ error: 'Forbidden' });
+          }
+
+          // SQLite doesn't support skipDuplicates, so we create individually
+          // with a transaction for better performance
+          const reads = data.messageIds.map((messageId) => ({
+            messageId,
+            userId,
+          }));
+
+          await prisma.$transaction(
+            reads.map((read) =>
+              prisma.chatMessageRead.upsert({
+                where: {
+                  messageId_userId: {
+                    messageId: read.messageId,
+                    userId: read.userId,
+                  },
+                },
+                create: read,
+                update: {}, // No update needed, just ensure it exists
+              })
+            )
+          );
+
+          // Broadcast read receipts to room
+          io?.to(data.roomId).emit('messages:read_receipt', {
+            roomId: data.roomId,
+            userId,
+            messageIds: data.messageIds,
+            readAt: new Date().toISOString(),
+          });
+
+          ack?.({ success: true });
+        } catch (error) {
+          console.error('[Socket] messages:read error:', error);
+          ack?.({ error: 'خطا در ثبت وضعیت خواندن' });
+        }
+      }
+    );
+
     // ─── Task Comments ────────────────────────
     socket.on('comment:add', async (data: { taskId: string; content: string }) => {
       try {

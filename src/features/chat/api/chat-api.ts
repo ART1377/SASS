@@ -63,4 +63,11 @@ export const chatApi = {
     );
     return response.data;
   },
+
+  getReadReceipts: async (roomId: string): Promise<Record<string, string[]>> => {
+    const response = await apiClient.get<Record<string, string[]>>(
+      `/chat/rooms/${roomId}/read-receipts`
+    );
+    return response.data;
+  },
 };

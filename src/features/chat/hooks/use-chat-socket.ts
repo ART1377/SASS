@@ -32,21 +32,30 @@ export function useChatSocket(roomId: string) {
   const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineCount, setOnlineCount] = useState(0);
-  const joinedRef = useRef(false);
+  const previousRoomRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    if (!joinedRef.current) {
-      socket.emit('room:join', roomId);
-      joinedRef.current = true;
+    // Leave previous room if switching
+    if (previousRoomRef.current && previousRoomRef.current !== roomId) {
+      socket.emit('room:leave', previousRoomRef.current);
     }
+
+    // Join new room (always, even if reconnecting)
+    socket.emit('room:join', roomId);
+    previousRoomRef.current = roomId;
+
+    // Clear messages from previous room
+    setLiveMessages([]);
+    setDeletedMessageIds(new Set());
+    setTypingUsers([]);
+    setOnlineCount(0);
 
     const onMessage = (msg: SocketMessage) => {
       setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
     };
 
-    // Broadcast for any deletion in this room, including our own
     const onMessageDeleted = (data: { roomId: string; messageId: string }) => {
       if (data.roomId !== roomId) return;
       setDeletedMessageIds((prev) => {
@@ -57,9 +66,18 @@ export function useChatSocket(roomId: string) {
       });
     };
 
-    // Listen for real-time message edits
     const onMessageUpdated = (updated: SocketMessage) => {
       setLiveMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
+    };
+
+    const onReadReceipt = (data: {
+      roomId: string;
+      userId: string;
+      messageIds: string[];
+      readAt: string;
+    }) => {
+      if (data.roomId !== roomId) return;
+      // Handled by useReadReceipts hook
     };
 
     const onTypingStart = (data: TypingUser & { roomId: string }) => {
@@ -81,6 +99,7 @@ export function useChatSocket(roomId: string) {
     socket.on('message:new', onMessage);
     socket.on('message:deleted', onMessageDeleted);
     socket.on('message:updated', onMessageUpdated);
+    socket.on('messages:read_receipt', onReadReceipt);
     socket.on('typing:user_started', onTypingStart);
     socket.on('typing:user_stopped', onTypingStop);
     socket.on('room:online_count', onOnlineCount);
@@ -89,12 +108,13 @@ export function useChatSocket(roomId: string) {
       socket.off('message:new', onMessage);
       socket.off('message:deleted', onMessageDeleted);
       socket.off('message:updated', onMessageUpdated);
+      socket.off('messages:read_receipt', onReadReceipt);
       socket.off('typing:user_started', onTypingStart);
       socket.off('typing:user_stopped', onTypingStop);
       socket.off('room:online_count', onOnlineCount);
 
       socket.emit('room:leave', roomId);
-      joinedRef.current = false;
+      previousRoomRef.current = null;
       setLiveMessages([]);
       setDeletedMessageIds(new Set());
       setTypingUsers([]);
@@ -102,7 +122,6 @@ export function useChatSocket(roomId: string) {
     };
   }, [socket, isConnected, roomId]);
 
-  // Sends via the socket (server persists then broadcasts)
   const send = useCallback(
     (payload: SendPayload): Promise<SocketMessage> => {
       return new Promise((resolve, reject) => {

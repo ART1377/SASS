@@ -11,7 +11,7 @@ export function TypingIndicator({ users }: { users: TypingUser[] }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="flex items-center gap-3"
+      className="flex items-center gap-3 py-4"
     >
       <Avatar className="ring-border h-7 w-7 shrink-0 ring-2">
         <AvatarFallback className="bg-primary/10 text-[10px]">

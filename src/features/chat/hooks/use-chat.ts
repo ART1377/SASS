@@ -12,6 +12,7 @@ import type { ChatMessage, ChatRoom, ReplyInfo, RoomUpdatedPayload } from '../ty
 import { useChatAPI } from './use-chat-api';
 import { useChatSocket } from './use-chat-socket';
 import { useForwardMessage } from './use-forward-message';
+import { useReadReceipts } from './use-read-receipts';
 
 function createClientId() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -27,6 +28,7 @@ export function useChat(roomId: string) {
 
   const [pending, setPending] = useState<Map<string, ChatMessage>>(new Map());
   const registeredRef = useRef(false);
+  const readReceipts = useReadReceipts(roomId);
 
   useEffect(() => {
     if (socket.isConnected && user?.id && !registeredRef.current) {
@@ -72,6 +74,20 @@ export function useChat(roomId: string) {
     () => socket.typingUsers.filter((u) => u.userId !== user?.id),
     [socket.typingUsers, user?.id]
   );
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    // Get all messages from others that aren't pending/failed
+    const unreadMessages = messages.filter(
+      (m) => m.senderId !== user?.id && m.status !== 'sending' && m.status !== 'failed'
+    );
+
+    if (unreadMessages.length > 0) {
+      const messageIds = unreadMessages.map((m) => m.id);
+      readReceipts.markAsRead(messageIds);
+    }
+  }, [messages, user?.id, readReceipts]);
 
   const sendMessage = async (content: string, replyTo?: ReplyInfo) => {
     const trimmed = content.trim();
@@ -236,6 +252,9 @@ export function useChat(roomId: string) {
     hasOlderMessages: api.hasOlderMessages,
     isLoadingOlder: api.isLoadingOlder,
     loadOlderMessages: api.loadOlderMessages,
+    getReadBy: readReceipts.getReadBy,
+    isReadByUser: readReceipts.isReadByUser,
+    registerMessageElement: readReceipts.registerMessageElement,
   };
 }
 
@@ -279,6 +298,16 @@ export function useChatRooms(projectId?: string, activeRoomId?: string) {
       socket.off('room:updated', onRoomUpdated);
     };
   }, [socket, isConnected, queryClient, queryKey, activeRoomId]);
+
+  // Reset unread count for the active room
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    queryClient.setQueryData<ChatRoom[]>(queryKey, (prev) => {
+      if (!prev) return prev;
+      return prev.map((room) => (room.id === activeRoomId ? { ...room, unreadCount: 0 } : room));
+    });
+  }, [activeRoomId, queryClient, queryKey]);
 
   return query;
 }

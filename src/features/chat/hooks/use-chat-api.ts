@@ -1,6 +1,6 @@
 import { queryKeys } from '@/shared/lib/query-keys';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { chatApi } from '../api/chat-api';
 import { MESSAGES_PAGE_SIZE } from '../constants';
 import type { ChatMessage } from '../types';
@@ -15,8 +15,26 @@ export function useChatAPI(roomId: string) {
       chatApi.getMessages(roomId, pageParam, MESSAGES_PAGE_SIZE),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
-    staleTime: Infinity,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes (formerly cacheTime)
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    enabled: !!roomId,
   });
+
+  // Remove old cached data for this room when roomId changes
+  const previousRoomIdRef = useRef(roomId);
+  useEffect(() => {
+    if (roomId !== previousRoomIdRef.current) {
+      // Clear the old room's cache completely
+      if (previousRoomIdRef.current) {
+        queryClient.removeQueries({
+          queryKey: queryKeys.chat.messages(previousRoomIdRef.current),
+        });
+      }
+      previousRoomIdRef.current = roomId;
+    }
+  }, [roomId, queryClient]);
 
   const messages = useMemo<ChatMessage[]>(() => {
     if (!messagesQuery.data) return [];
@@ -67,7 +85,7 @@ export function useChatAPI(roomId: string) {
     isLoadingOlder: messagesQuery.isFetchingNextPage,
     loadOlderMessages: messagesQuery.fetchNextPage,
     deleteMessage: deleteMutation.mutate,
-    deleteMessageAsync: deleteMutation.mutateAsync, // ← added
+    deleteMessageAsync: deleteMutation.mutateAsync,
     isDeleting: deleteMutation.isPending,
     updateMessage: (messageId: string, content: string) =>
       updateMutation.mutate({ messageId, content }),
