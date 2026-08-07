@@ -1,11 +1,13 @@
 'use client';
 
+import { useAuth } from '@/features/auth/hooks/use-auth';
 import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Columns, Plus } from 'lucide-react';
+import { useGlobalCommentListener } from '../hooks/use-global-comment-listener';
 import { useKanbanBoard } from '../hooks/use-kanban-board';
 import { useProjectMembers } from '../hooks/use-project-members';
 import type { Task } from '../types';
@@ -68,6 +70,10 @@ export function KanbanBoard() {
   const { data: members = [] } = useProjectMembers(
     selectedProjectId !== 'all' ? selectedProjectId : undefined
   );
+
+  useGlobalCommentListener();
+
+  const { user: currentUser } = useAuth();
 
   return (
     <>
@@ -170,7 +176,12 @@ export function KanbanBoard() {
         isDeleting={isDeleting}
       />
       {viewingTask && (
-        <TaskDetailSheet task={viewingTask} open={!!viewingTask} onOpenChange={closeView} />
+        <TaskDetailSheet
+          task={viewingTask}
+          open={!!viewingTask}
+          onOpenChange={closeView}
+          currentUserId={currentUser?.id}
+        />
       )}
     </>
   );

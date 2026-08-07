@@ -101,20 +101,29 @@ export const TaskCard = memo(function TaskCard({
           )}
         </div>
 
-        {/* Footer Row: Comments + Assignee */}
+        {/* Footer Row: Comments + Assignees */}
         <div className="border-border/40 flex items-center justify-between border-t pt-1.5">
           <div className="text-muted-foreground/70 flex items-center gap-1 text-xs">
             <MessageSquare className="h-3 w-3" />
             {task._count?.comments ?? 0}
           </div>
-          {task.assignee && (
-            <div className="relative">
-              <Avatar className="ring-border h-6 w-6 ring-2">
-                <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-                  {getInitials(task.assignee.name)}
-                </AvatarFallback>
-              </Avatar>
-              <OnlineBadge isOnline={isUserOnline(task.assignee.id)} />
+          {task.assignees && task.assignees.length > 0 && (
+            <div className="flex -space-x-2 rtl:space-x-reverse">
+              {task.assignees.slice(0, 3).map((assignee) => (
+                <div key={assignee.userId} className="relative">
+                  <Avatar className="ring-border h-6 w-6 ring-2">
+                    <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                      {getInitials(assignee.user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <OnlineBadge isOnline={isUserOnline(assignee.userId)} />
+                </div>
+              ))}
+              {task.assignees.length > 3 && (
+                <div className="bg-muted ring-border flex h-6 w-6 items-center justify-center rounded-full text-[9px] ring-2">
+                  +{task.assignees.length - 3}
+                </div>
+              )}
             </div>
           )}
         </div>

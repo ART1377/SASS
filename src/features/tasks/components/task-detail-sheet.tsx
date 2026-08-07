@@ -7,8 +7,8 @@ import { Button } from '@/shared/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
 import { StatusBadge } from '@/shared/components/ui/status-badge';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { formatDateTime, getInitials } from '@/shared/lib/utils';
-import { usePresence } from '@/shared/providers/presence-provider'; // ← import
+import { cn, formatDateTime, getInitials } from '@/shared/lib/utils';
+import { usePresence } from '@/shared/providers/presence-provider';
 import { Loader2, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from '../constants';
@@ -19,12 +19,13 @@ interface TaskDetailSheetProps {
   task: Task;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  currentUserId?: string; // NEW: pass current user ID
 }
 
-export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, open, onOpenChange, currentUserId }: TaskDetailSheetProps) {
   const [newComment, setNewComment] = useState('');
   const { comments, isLoading, addComment, isAddingComment } = useTaskComments(task.id, open);
-  const { isUserOnline } = usePresence(); // ← add
+  const { isUserOnline } = usePresence();
 
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
@@ -74,19 +75,22 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
           {task.description && (
             <p className="text-muted-foreground mt-2 text-sm">{task.description}</p>
           )}
-          {task.assignee && (
-            <div className="mt-3 flex items-center gap-2">
-              <div className="relative">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-[9px]">
-                    {getInitials(task.assignee.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <OnlineBadge isOnline={isUserOnline(task.assignee.id)} /> {/* ← real */}
-              </div>
-              <span className="text-muted-foreground text-xs">
-                واگذار شده به {task.assignee.name}
-              </span>
+          {task.assignees && task.assignees.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground text-xs">واگذار شده به:</span>
+              {task.assignees.map((assignee) => (
+                <div key={assignee.userId} className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[9px]">
+                        {getInitials(assignee.user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <OnlineBadge isOnline={isUserOnline(assignee.userId)} />
+                  </div>
+                  <span className="text-xs">{assignee.user.name}</span>
+                </div>
+              ))}
             </div>
           )}
         </SheetHeader>
@@ -103,28 +107,43 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
             <p className="text-muted-foreground py-4 text-center text-xs">هنوز نظری ثبت نشده</p>
           ) : (
             <div className="space-y-4">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="relative h-fit">
-                    <Avatar className="h-7 w-7 shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                        {getInitials(comment.user.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <OnlineBadge isOnline={isUserOnline(comment.user.id)} /> {/* ← real */}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{comment.user.name}</p>
-                      <span className="text-muted-foreground text-[10px]">
-                        {formatDateTime(comment.createdAt)}
-                      </span>
+              {comments.map((comment) => {
+                const isOwn = comment.user.id === currentUserId;
+
+                return (
+                  <div
+                    key={comment.id}
+                    className={cn('flex gap-3', isOwn ? 'flex-row-reverse' : 'flex-row')}
+                  >
+                    <div className="relative h-fit shrink-0">
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                          {getInitials(comment.user.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineBadge isOnline={isUserOnline(comment.user.id)} />
                     </div>
-                    <p className="text-muted-foreground mt-0.5 text-sm">{comment.content}</p>
+                    <div className={cn('min-w-0 flex-1', isOwn && 'flex flex-col items-end')}>
+                      <div className={cn('flex items-center gap-2', isOwn && 'flex-row-reverse')}>
+                        <p className="text-sm font-medium">{comment.user.name}</p>
+                        <span className="text-muted-foreground text-[10px]">
+                          {formatDateTime(comment.createdAt)}
+                        </span>
+                      </div>
+                      <div
+                        className={cn(
+                          'mt-1 inline-block max-w-[85%] rounded-2xl px-3.5 py-2 text-sm',
+                          isOwn
+                            ? 'bg-primary text-primary-foreground rounded-tr-md'
+                            : 'bg-muted rounded-tl-md'
+                        )}
+                      >
+                        <p className="break-words whitespace-pre-wrap">{comment.content}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {/* Invisible element to scroll to */}
+                );
+              })}
               <div ref={commentsEndRef} />
             </div>
           )}

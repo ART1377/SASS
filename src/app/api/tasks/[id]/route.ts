@@ -13,28 +13,47 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, status, priority, assigneeId, dueDate } = body;
-
-    const data: any = {};
-
-    if (title !== undefined) data.title = title;
-    if (description !== undefined) data.description = description;
-    if (status !== undefined) data.status = status;
-    if (priority !== undefined) data.priority = priority;
-    if (assigneeId !== undefined) data.assigneeId = assigneeId || null;
-    if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
+    const { title, description, status, priority, assigneeIds, dueDate } = body;
 
     // Get old task to compare changes
     const oldTask = await prisma.task.findUnique({
       where: { id },
-      select: { title: true, status: true, assigneeId: true, project: { select: { name: true } } },
+      select: {
+        title: true,
+        status: true,
+        assignees: { select: { userId: true } },
+        project: { select: { name: true } },
+      },
     });
+
+    const data: any = {};
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description;
+    if (status !== undefined) data.status = status;
+    if (priority !== undefined) data.priority = priority;
+    if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
+
+    // Handle assignees update
+    if (assigneeIds !== undefined) {
+      // Delete existing assignees
+      await prisma.taskAssignee.deleteMany({ where: { taskId: id } });
+      // Create new ones
+      if (assigneeIds.length > 0) {
+        await prisma.taskAssignee.createMany({
+          data: assigneeIds.map((userId: string) => ({ taskId: id, userId })),
+        });
+      }
+    }
 
     const task = await prisma.task.update({
       where: { id },
       data,
       include: {
-        assignee: { select: { id: true, name: true, avatar: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, name: true, avatar: true } },
+          },
+        },
         creator: { select: { id: true, name: true, avatar: true } },
         project: { select: { id: true, name: true } },
         _count: { select: { comments: true } },
@@ -42,56 +61,57 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     // ─── Notification: Status changed ───
-    if (
-      status &&
-      oldTask &&
-      status !== oldTask.status &&
-      oldTask.assigneeId &&
-      oldTask.assigneeId !== session.user.id
-    ) {
+    if (status && oldTask && status !== oldTask.status) {
+      const oldAssigneeIds = oldTask.assignees.map((a) => a.userId);
       const statusLabel = TASK_STATUS_LABELS[status] || status;
 
-      await prisma.notification.create({
-        data: {
-          userId: oldTask.assigneeId,
-          title: 'بروزرسانی تسک',
-          message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
-          type: 'TASK_UPDATED',
-        },
-      });
+      for (const assigneeId of oldAssigneeIds) {
+        if (assigneeId !== session.user.id) {
+          await prisma.notification.create({
+            data: {
+              userId: assigneeId,
+              title: 'بروزرسانی تسک',
+              message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+              type: 'TASK_UPDATED',
+            },
+          });
 
-      sendSSENotification({
-        userId: oldTask.assigneeId,
-        type: 'TASK_UPDATED',
-        title: 'بروزرسانی تسک',
-        message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
-        data: { taskId: id, projectId: task.projectId },
-      });
+          sendSSENotification({
+            userId: assigneeId,
+            type: 'TASK_UPDATED',
+            title: 'بروزرسانی تسک',
+            message: `وضعیت تسک "${oldTask.title}" به "${statusLabel}" تغییر کرد`,
+            data: { taskId: id, projectId: task.projectId },
+          });
+        }
+      }
     }
 
-    // ─── Notification: New assignee ───
-    if (
-      assigneeId &&
-      oldTask &&
-      assigneeId !== oldTask.assigneeId &&
-      assigneeId !== session.user.id
-    ) {
-      await prisma.notification.create({
-        data: {
-          userId: assigneeId,
-          title: 'تسک جدید',
-          message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
-          type: 'TASK_ASSIGNED',
-        },
-      });
+    // ─── Notification: New assignees ───
+    if (assigneeIds !== undefined && oldTask) {
+      const oldAssigneeIds = new Set(oldTask.assignees.map((a) => a.userId));
+      const newAssignees = assigneeIds.filter((uid: string) => !oldAssigneeIds.has(uid));
 
-      sendSSENotification({
-        userId: assigneeId,
-        type: 'TASK_ASSIGNED',
-        title: 'تسک جدید',
-        message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
-        data: { projectId: task.projectId, taskId: task.id },
-      });
+      for (const assigneeId of newAssignees) {
+        if (assigneeId !== session.user.id) {
+          await prisma.notification.create({
+            data: {
+              userId: assigneeId,
+              title: 'تسک جدید',
+              message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+              type: 'TASK_ASSIGNED',
+            },
+          });
+
+          sendSSENotification({
+            userId: assigneeId,
+            type: 'TASK_ASSIGNED',
+            title: 'تسک جدید',
+            message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+            data: { projectId: task.projectId, taskId: task.id },
+          });
+        }
+      }
     }
 
     return NextResponse.json(task);

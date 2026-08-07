@@ -2,7 +2,16 @@
 
 import { useProjects } from '@/features/projects/hooks/use-projects';
 import { DialogHeaderWithIcon } from '@/shared/components/dialog-header-with-icon';
+import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/shared/components/ui/command';
 import { Dialog, DialogContent, DialogTrigger } from '@/shared/components/ui/dialog';
 import {
   Form,
@@ -14,6 +23,7 @@ import {
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
 import { PersianDatePicker } from '@/shared/components/ui/persian-date-picker';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -23,9 +33,10 @@ import {
 } from '@/shared/components/ui/select';
 import { SubmitButton } from '@/shared/components/ui/submit-button';
 import { Textarea } from '@/shared/components/ui/textarea';
+import { cn } from '@/shared/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckSquare, Pencil, Plus } from 'lucide-react';
-import { useEffect } from 'react';
+import { Check, CheckSquare, ChevronsUpDown, Pencil, Plus, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useProjectMembers } from '../hooks/use-project-members';
 import { useTasks } from '../hooks/use-tasks';
@@ -42,6 +53,7 @@ interface TaskDialogProps {
 export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProps) {
   const { createTask, isCreating, updateTask, isUpdating } = useTasks();
   const { projects } = useProjects();
+  const [assigneePopoverOpen, setAssigneePopoverOpen] = useState(false);
 
   const isEditing = !!task;
   const isLoading = isEditing ? isUpdating : isCreating;
@@ -53,15 +65,15 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
       description: task?.description ?? '',
       priority: task?.priority ?? 'MEDIUM',
       projectId: task?.projectId ?? '',
-      assigneeId: task?.assigneeId ?? '',
+      assigneeIds: task?.assignees?.map((a) => a.userId) ?? [],
       dueDate: task?.dueDate ? task.dueDate.split('T')[0] : '',
     },
   });
 
   const selectedProjectId = form.watch('projectId');
+  const selectedAssigneeIds = form.watch('assigneeIds') || [];
   const { data: members = [] } = useProjectMembers(selectedProjectId || undefined);
 
-  // Reset form when editing a different task
   useEffect(() => {
     if (task) {
       form.reset({
@@ -69,17 +81,22 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
         description: task.description || '',
         priority: task.priority,
         projectId: task.projectId,
-        assigneeId: task.assigneeId || '',
+        assigneeIds: task.assignees?.map((a) => a.userId) ?? [],
         dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
       });
     }
   }, [task, form]);
 
   function onSubmit(data: CreateTaskFormData) {
+    const payload = {
+      ...data,
+      assigneeIds: data.assigneeIds?.length ? data.assigneeIds : undefined,
+    };
+
     if (isEditing) {
-      updateTask({ id: task!.id, data }, { onSuccess: () => onOpenChange(false) });
+      updateTask({ id: task!.id, data: payload }, { onSuccess: () => onOpenChange(false) });
     } else {
-      createTask(data, {
+      createTask(payload, {
         onSuccess: () => {
           onOpenChange(false);
           form.reset();
@@ -87,6 +104,28 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
       });
     }
   }
+
+  const toggleAssignee = (userId: string) => {
+    const current = form.getValues('assigneeIds') || [];
+    if (current.includes(userId)) {
+      form.setValue(
+        'assigneeIds',
+        current.filter((id) => id !== userId)
+      );
+    } else {
+      form.setValue('assigneeIds', [...current, userId]);
+    }
+  };
+
+  const removeAssignee = (userId: string) => {
+    const current = form.getValues('assigneeIds') || [];
+    form.setValue(
+      'assigneeIds',
+      current.filter((id) => id !== userId)
+    );
+  };
+
+  const selectedMembers = members.filter((m) => selectedAssigneeIds.includes(m.user.id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,7 +140,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-4">
-            {/* Row 1: Project + Assignee (half each) */}
+            {/* Row 1: Project + Priority */}
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -136,32 +175,21 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
 
               <FormField
                 control={form.control}
-                name="assigneeId"
+                name="priority"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>واگذار به</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
-                      disabled={!selectedProjectId}
-                    >
+                    <FormLabel>اولویت</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="انتخاب عضو" />
+                          <SelectValue placeholder="انتخاب کنید" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {members.length === 0 ? (
-                          <div className="text-muted-foreground px-2 py-4 text-center text-sm">
-                            عضوی یافت نشد
-                          </div>
-                        ) : (
-                          members.map((m) => (
-                            <SelectItem key={m.user.id} value={m.user.id}>
-                              {m.user.name}
-                            </SelectItem>
-                          ))
-                        )}
+                        <SelectItem value="LOW">کم</SelectItem>
+                        <SelectItem value="MEDIUM">متوسط</SelectItem>
+                        <SelectItem value="HIGH">زیاد</SelectItem>
+                        <SelectItem value="URGENT">فوری</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -170,7 +198,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
               />
             </div>
 
-            {/* Row 2: Title (full width) */}
+            {/* Row 2: Title */}
             <FormField
               control={form.control}
               name="title"
@@ -185,7 +213,7 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
               )}
             />
 
-            {/* Row 3: Description (full width) */}
+            {/* Row 3: Description */}
             <FormField
               control={form.control}
               name="description"
@@ -205,27 +233,73 @@ export function TaskDialog({ task, open, onOpenChange, trigger }: TaskDialogProp
               )}
             />
 
-            {/* Row 4: Priority + Due Date (half each) */}
+            {/* Row 4: Assignees (Multi-select) + Due Date */}
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="priority"
-                render={({ field }) => (
+                name="assigneeIds"
+                render={() => (
                   <FormItem>
-                    <FormLabel>اولویت</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="انتخاب کنید" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="LOW">کم</SelectItem>
-                        <SelectItem value="MEDIUM">متوسط</SelectItem>
-                        <SelectItem value="HIGH">زیاد</SelectItem>
-                        <SelectItem value="URGENT">فوری</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>واگذار به</FormLabel>
+                    <Popover open={assigneePopoverOpen} onOpenChange={setAssigneePopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          disabled={!selectedProjectId || isLoading}
+                          className="w-full justify-between"
+                        >
+                          {selectedAssigneeIds.length > 0
+                            ? `${selectedAssigneeIds.length} نفر انتخاب شده`
+                            : 'انتخاب اعضا'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="جستجوی عضو..." />
+                          <CommandList>
+                            <CommandEmpty>عضوی یافت نشد</CommandEmpty>
+                            <CommandGroup>
+                              {members.map((member) => (
+                                <CommandItem
+                                  key={member.user.id}
+                                  value={member.user.name}
+                                  onSelect={() => toggleAssignee(member.user.id)}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      selectedAssigneeIds.includes(member.user.id)
+                                        ? 'opacity-100'
+                                        : 'opacity-0'
+                                    )}
+                                  />
+                                  {member.user.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {/* Selected assignees chips */}
+                    {selectedMembers.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {selectedMembers.map((member) => (
+                          <Badge key={member.user.id} variant="secondary" className="gap-1 pr-1.5">
+                            {member.user.name}
+                            <button
+                              type="button"
+                              onClick={() => removeAssignee(member.user.id)}
+                              className="hover:bg-muted ml-0.5 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

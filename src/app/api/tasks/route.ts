@@ -21,19 +21,19 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    // Build the where clause
     const where: Prisma.TaskWhereInput = {};
 
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
     if (priority) where.priority = priority;
-    if (assigneeId) where.assigneeId = assigneeId;
+    if (assigneeId) {
+      where.assignees = { some: { userId: assigneeId } };
+    }
 
     if (search) {
       where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
     }
 
-    // Determine sort order
     const orderBy: Prisma.TaskOrderByWithRelationInput[] = [];
     const direction: Prisma.SortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
 
@@ -51,7 +51,11 @@ export async function GET(request: Request) {
     const tasks = await prisma.task.findMany({
       where,
       include: {
-        assignee: { select: { id: true, name: true, avatar: true } },
+        assignees: {
+          include: {
+            user: { select: { id: true, name: true, avatar: true } },
+          },
+        },
         creator: { select: { id: true, name: true, avatar: true } },
         project: { select: { id: true, name: true } },
         _count: { select: { comments: true } },
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, description, priority, projectId, assigneeId, dueDate } = body;
+    const { title, description, priority, projectId, assigneeIds, dueDate } = body;
 
     if (!title || !projectId) {
       return NextResponse.json({ error: 'عنوان و پروژه الزامی هستند' }, { status: 400 });
@@ -86,44 +90,48 @@ export async function POST(request: Request) {
         description: description || null,
         priority: priority || 'MEDIUM',
         projectId,
-        assigneeId: assigneeId || null,
         creatorId: session.user.id,
         dueDate: dueDate ? new Date(dueDate) : null,
+        assignees: assigneeIds?.length
+          ? {
+              create: assigneeIds.map((userId: string) => ({ userId })),
+            }
+          : undefined,
       },
       include: {
-        assignee: {
-          select: { id: true, name: true, avatar: true },
+        assignees: {
+          include: {
+            user: { select: { id: true, name: true, avatar: true } },
+          },
         },
-        creator: {
-          select: { id: true, name: true, avatar: true },
-        },
-        project: {
-          select: { id: true, name: true },
-        },
-        _count: {
-          select: { comments: true },
-        },
+        creator: { select: { id: true, name: true, avatar: true } },
+        project: { select: { id: true, name: true } },
+        _count: { select: { comments: true } },
       },
     });
 
-    // ─── Send notification if task is assigned to someone else ───
-    if (assigneeId && assigneeId !== session.user.id) {
-      await prisma.notification.create({
-        data: {
-          userId: assigneeId,
-          title: 'تسک جدید',
-          message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
-          type: 'TASK_ASSIGNED',
-        },
-      });
+    // Send notifications to all assignees (except creator)
+    if (assigneeIds?.length) {
+      for (const assigneeId of assigneeIds) {
+        if (assigneeId !== session.user.id) {
+          await prisma.notification.create({
+            data: {
+              userId: assigneeId,
+              title: 'تسک جدید',
+              message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+              type: 'TASK_ASSIGNED',
+            },
+          });
 
-      sendSSENotification({
-        userId: assigneeId,
-        type: 'TASK_ASSIGNED',
-        title: 'تسک جدید',
-        message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
-        data: { projectId, taskId: task.id },
-      });
+          sendSSENotification({
+            userId: assigneeId,
+            type: 'TASK_ASSIGNED',
+            title: 'تسک جدید',
+            message: `تسک "${task.title}" در پروژه "${task.project?.name || 'ناشناخته'}" به شما واگذار شد`,
+            data: { projectId, taskId: task.id },
+          });
+        }
+      }
     }
 
     return NextResponse.json(task, { status: 201 });

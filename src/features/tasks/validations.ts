@@ -9,7 +9,7 @@ export const createTaskSchema = z.object({
   description: z.string().max(1000, 'توضیحات نمی‌تواند بیشتر از ۱۰۰۰ کاراکتر باشد').optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
   projectId: z.string().min(1, 'پروژه الزامی است'),
-  assigneeId: z.string().optional(),
+  assigneeIds: z.array(z.string()).optional(), // Changed to array
   dueDate: z.string().optional(),
 });
 

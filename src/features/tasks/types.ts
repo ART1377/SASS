@@ -1,3 +1,13 @@
+export interface TaskAssignee {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    name: string;
+    avatar: string | null;
+  };
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -5,16 +15,11 @@ export interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   projectId: string;
-  assigneeId: string | null;
   creatorId: string;
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
-  assignee?: {
-    id: string;
-    name: string;
-    avatar: string | null;
-  } | null;
+  assignees?: TaskAssignee[]; // Changed from single assignee
   creator?: {
     id: string;
     name: string;
@@ -34,7 +39,7 @@ export interface CreateTaskInput {
   description?: string;
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   projectId: string;
-  assigneeId?: string;
+  assigneeIds?: string[]; // Changed to array
   dueDate?: string;
 }
 
@@ -43,7 +48,7 @@ export interface UpdateTaskInput {
   description?: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  assigneeId?: string | null;
+  assigneeIds?: string[]; // Changed to array
   dueDate?: string | null;
 }
 

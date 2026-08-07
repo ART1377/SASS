@@ -5,7 +5,7 @@ import { useSocket } from '@/shared/providers/socket-provider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { tasksApi } from '../api/tasks-api';
-import { TaskComment } from '../types';
+import type { TaskComment } from '../types';
 
 export function useTaskComments(taskId: string, enabled: boolean) {
   const queryClient = useQueryClient();
@@ -15,9 +15,10 @@ export function useTaskComments(taskId: string, enabled: boolean) {
     queryKey: queryKeys.tasks.comments(taskId),
     queryFn: () => tasksApi.getComments(taskId),
     enabled,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
-  // Send comment via Socket (primary path)
   const addCommentMutation = useMutation({
     mutationFn: (content: string) => {
       return new Promise<void>((resolve, reject) => {
@@ -31,7 +32,7 @@ export function useTaskComments(taskId: string, enabled: boolean) {
     },
   });
 
-  // Listen for real‑time comments
+  // Listen for real‑time comments (only updates the comments list)
   useEffect(() => {
     if (!socket) return;
 

@@ -72,7 +72,7 @@ export function PersianDatePicker({
         variant="outline"
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          'h-8 w-full justify-start px-3 text-right text-xs font-normal',
+          'h-10 w-full justify-start px-3 text-right text-xs font-normal',
           !value && 'text-muted-foreground'
         )}
       >
