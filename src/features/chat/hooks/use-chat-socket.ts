@@ -21,6 +21,11 @@ interface DeleteAck {
   error?: string;
 }
 
+interface UpdateAck {
+  message?: SocketMessage;
+  error?: string;
+}
+
 export function useChatSocket(roomId: string) {
   const { socket, isConnected } = useSocket();
   const [liveMessages, setLiveMessages] = useState<SocketMessage[]>([]);
@@ -41,9 +46,7 @@ export function useChatSocket(roomId: string) {
       setLiveMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
     };
 
-    // Broadcast for any deletion in this room, including our own — this is
-    // what actually clears the message from every connected client without
-    // requiring a reload.
+    // Broadcast for any deletion in this room, including our own
     const onMessageDeleted = (data: { roomId: string; messageId: string }) => {
       if (data.roomId !== roomId) return;
       setDeletedMessageIds((prev) => {
@@ -52,6 +55,11 @@ export function useChatSocket(roomId: string) {
         next.add(data.messageId);
         return next;
       });
+    };
+
+    // Listen for real-time message edits
+    const onMessageUpdated = (updated: SocketMessage) => {
+      setLiveMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
     };
 
     const onTypingStart = (data: TypingUser & { roomId: string }) => {
@@ -72,6 +80,7 @@ export function useChatSocket(roomId: string) {
 
     socket.on('message:new', onMessage);
     socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:updated', onMessageUpdated);
     socket.on('typing:user_started', onTypingStart);
     socket.on('typing:user_stopped', onTypingStop);
     socket.on('room:online_count', onOnlineCount);
@@ -79,6 +88,7 @@ export function useChatSocket(roomId: string) {
     return () => {
       socket.off('message:new', onMessage);
       socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:updated', onMessageUpdated);
       socket.off('typing:user_started', onTypingStart);
       socket.off('typing:user_stopped', onTypingStop);
       socket.off('room:online_count', onOnlineCount);
@@ -92,8 +102,7 @@ export function useChatSocket(roomId: string) {
     };
   }, [socket, isConnected, roomId]);
 
-  // Sends via the socket (server persists then broadcasts to the whole
-  // room, including the sender) and resolves with the persisted message.
+  // Sends via the socket (server persists then broadcasts)
   const send = useCallback(
     (payload: SendPayload): Promise<SocketMessage> => {
       return new Promise((resolve, reject) => {
@@ -146,6 +155,25 @@ export function useChatSocket(roomId: string) {
     [socket, isConnected, roomId]
   );
 
+  const updateMessage = useCallback(
+    (messageId: string, content: string): Promise<SocketMessage> => {
+      return new Promise((resolve, reject) => {
+        if (!socket || !isConnected) {
+          reject(new Error('اتصال برقرار نیست'));
+          return;
+        }
+        socket.emit('message:update', { roomId, messageId, content }, (ack: UpdateAck) => {
+          if (ack?.error || !ack?.message) {
+            reject(new Error(ack?.error || 'خطا در ویرایش پیام'));
+            return;
+          }
+          resolve(ack.message);
+        });
+      });
+    },
+    [socket, isConnected, roomId]
+  );
+
   const startTyping = useCallback(() => {
     socket?.emit('typing:start', { roomId });
   }, [socket, roomId]);
@@ -168,6 +196,7 @@ export function useChatSocket(roomId: string) {
     onlineCount,
     send,
     deleteMessage,
+    updateMessage,
     startTyping,
     stopTyping,
     registerUser,

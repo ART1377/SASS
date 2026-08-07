@@ -40,6 +40,7 @@ export function useChat(roomId: string) {
     if (!socket.isConnected) registeredRef.current = false;
   }, [socket.isConnected, user, socket]);
 
+  // Remove pending messages when confirmed broadcast arrives
   useEffect(() => {
     if (socket.liveMessages.length === 0 || pending.size === 0) return;
     setPending((prev) => {
@@ -55,14 +56,17 @@ export function useChat(roomId: string) {
     });
   }, [socket.liveMessages, pending.size]);
 
+  // Merge: API history + live socket messages + pending optimistic - deleted
   const messages = useMemo(() => {
     const historyIds = new Set(api.messages.map((m) => m.id));
-    const live = socket.liveMessages.filter((m) => !historyIds.has(m.id));
-    const merged = [...api.messages, ...live].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    const live = socket.liveMessages.filter(
+      (m) => !historyIds.has(m.id) && !socket.deletedMessageIds.has(m.id)
     );
+    const merged = [...api.messages, ...live]
+      .filter((m) => !socket.deletedMessageIds.has(m.id))
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return [...merged, ...pending.values()];
-  }, [api.messages, socket.liveMessages, pending]);
+  }, [api.messages, socket.liveMessages, socket.deletedMessageIds, pending]);
 
   const othersTyping = useMemo(
     () => socket.typingUsers.filter((u) => u.userId !== user?.id),
@@ -127,30 +131,61 @@ export function useChat(roomId: string) {
       });
   };
 
-  // ── Single delete with toast ──
+  // ── Single delete with toast (uses socket for real-time broadcast) ──
   const deleteMessageWithToast = useCallback(
     async (messageId: string) => {
       try {
-        await api.deleteMessageAsync(messageId);
+        await socket.deleteMessage(messageId);
         toast.success('پیام حذف شد');
       } catch {
-        toast.error('خطا در حذف پیام');
+        // Fallback to REST if socket fails
+        try {
+          await api.deleteMessageAsync(messageId);
+          toast.success('پیام حذف شد');
+        } catch {
+          toast.error('خطا در حذف پیام');
+        }
       }
     },
-    [api]
+    [socket, api]
+  );
+
+  // ── Update message with toast (uses socket for real-time broadcast) ──
+  const updateMessageWithToast = useCallback(
+    async (messageId: string, content: string) => {
+      try {
+        await socket.updateMessage(messageId, content);
+        toast.success('پیام ویرایش شد');
+      } catch {
+        // Fallback to REST if socket fails
+        try {
+          await api.updateMessage(messageId, content);
+          toast.success('پیام ویرایش شد');
+        } catch {
+          toast.error('خطا در ویرایش پیام');
+        }
+      }
+    },
+    [socket, api]
   );
 
   // ── Bulk delete with toast ──
   const bulkDeleteMessagesWithToast = useCallback(
     async (messageIds: string[]) => {
       try {
-        await Promise.all(messageIds.map((id) => api.deleteMessageAsync(id)));
+        await Promise.all(messageIds.map((id) => socket.deleteMessage(id)));
         toast.success(`${messageIds.length} پیام حذف شد`);
       } catch {
-        toast.error('خطا در حذف پیام‌ها');
+        // Fallback to REST
+        try {
+          await Promise.all(messageIds.map((id) => api.deleteMessageAsync(id)));
+          toast.success(`${messageIds.length} پیام حذف شد`);
+        } catch {
+          toast.error('خطا در حذف پیام‌ها');
+        }
       }
     },
-    [api]
+    [socket, api]
   );
 
   // ── Forward messages with toast ──
@@ -194,10 +229,10 @@ export function useChat(roomId: string) {
     deleteMessage: api.deleteMessage,
     deleteMessageAsync: api.deleteMessageAsync,
     deleteMessageWithToast,
+    updateMessage: updateMessageWithToast,
     bulkDeleteMessagesWithToast,
     forwardMessagesWithToast,
     copyMessageWithToast,
-    updateMessage: api.updateMessage,
     hasOlderMessages: api.hasOlderMessages,
     isLoadingOlder: api.isLoadingOlder,
     loadOlderMessages: api.loadOlderMessages,

@@ -92,7 +92,7 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
                       ? room.lastMessage.sender.name + ': ' + room.lastMessage.content
                       : `${room._count?.members ?? 0} عضو • ${room._count?.messages ?? 0} پیام`}
                   </p>
-                  {room.unreadCount && room.unreadCount > 0 && (
+                  {!!room.unreadCount && (
                     <span className="bg-primary text-primary-foreground ml-2 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold">
                       {room.unreadCount > 99 ? '99+' : room.unreadCount}
                     </span>

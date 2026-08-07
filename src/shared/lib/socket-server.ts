@@ -30,7 +30,7 @@ interface SendMessagePayload {
   forwardedFromName?: string | null;
 }
 
-type Ack = (response: { message?: unknown; error?: string }) => void;
+type Ack = (response: { message?: unknown; error?: string; success?: boolean }) => void;
 
 const onlineUsers = new Map<string, SocketUser>();
 
@@ -113,8 +113,6 @@ export function initSocketServer(server: NetServer) {
     });
 
     // ─── Chat Messages ────────────────────────
-    // Sole persistence path for chat messages (regular sends and forwards
-    // both go through here). The REST endpoint is a fallback only.
     socket.on('message:send', async (data: SendMessagePayload, ack?: Ack) => {
       try {
         const userId = socket.data.userId;
@@ -167,6 +165,100 @@ export function initSocketServer(server: NetServer) {
         ack?.({ error: 'خطا در ارسال پیام' });
       }
     });
+
+    // ─── Message Delete ───────────────────────
+    socket.on('message:delete', async (data: { roomId: string; messageId: string }, ack?: Ack) => {
+      try {
+        const userId = socket.data.userId;
+        if (!userId) return ack?.({ error: 'ثبت‌نام نشده' });
+
+        if (!(await isRoomMember(data.roomId, userId))) {
+          return ack?.({ error: 'Forbidden' });
+        }
+
+        const message = await prisma.chatMessage.findUnique({
+          where: { id: data.messageId },
+          select: { senderId: true, roomId: true },
+        });
+
+        if (!message) {
+          return ack?.({ error: 'پیام یافت نشد' });
+        }
+
+        if (message.senderId !== userId) {
+          return ack?.({ error: 'فقط فرستنده پیام می‌تواند آن را حذف کند' });
+        }
+
+        if (message.roomId !== data.roomId) {
+          return ack?.({ error: 'Forbidden' });
+        }
+
+        await prisma.chatMessage.delete({ where: { id: data.messageId } });
+
+        // Broadcast deletion to all clients in the room
+        io?.to(data.roomId).emit('message:deleted', {
+          roomId: data.roomId,
+          messageId: data.messageId,
+        });
+
+        ack?.({ success: true });
+      } catch (error) {
+        console.error('[Socket] message:delete error:', error);
+        ack?.({ error: 'خطا در حذف پیام' });
+      }
+    });
+
+    // ─── Message Update (Edit) ────────────────
+    socket.on(
+      'message:update',
+      async (data: { roomId: string; messageId: string; content: string }, ack?: Ack) => {
+        try {
+          const userId = socket.data.userId;
+          if (!userId) return ack?.({ error: 'ثبت‌نام نشده' });
+
+          if (!(await isRoomMember(data.roomId, userId))) {
+            return ack?.({ error: 'Forbidden' });
+          }
+
+          const trimmed = (data.content || '').trim();
+          if (!trimmed) return ack?.({ error: 'متن پیام نمی‌تواند خالی باشد' });
+          if (trimmed.length > MAX_MESSAGE_LENGTH) {
+            return ack?.({ error: `پیام نمی‌تواند بیشتر از ${MAX_MESSAGE_LENGTH} کاراکتر باشد` });
+          }
+
+          const message = await prisma.chatMessage.findUnique({
+            where: { id: data.messageId },
+            select: { senderId: true, roomId: true },
+          });
+
+          if (!message) {
+            return ack?.({ error: 'پیام یافت نشد' });
+          }
+
+          if (message.senderId !== userId) {
+            return ack?.({ error: 'فقط فرستنده پیام می‌تواند آن را ویرایش کند' });
+          }
+
+          if (message.roomId !== data.roomId) {
+            return ack?.({ error: 'Forbidden' });
+          }
+
+          const updated = await prisma.chatMessage.update({
+            where: { id: data.messageId },
+            data: { content: trimmed, editedAt: new Date() },
+            include: messageInclude,
+          });
+
+          // Broadcast update to all clients in the room
+          io?.to(data.roomId).emit('message:updated', updated);
+
+          ack?.({ message: updated });
+        } catch (error) {
+          console.error('[Socket] message:update error:', error);
+          ack?.({ error: 'خطا در ویرایش پیام' });
+        }
+      }
+    );
 
     // ─── Task Comments ────────────────────────
     socket.on('comment:add', async (data: { taskId: string; content: string }) => {
