@@ -13,15 +13,15 @@ export function ScrollButton({ visible, onClick }: ScrollButtonProps) {
     <AnimatePresence>
       {visible && (
         <motion.button
-          initial={{ opacity: 0, y: 10, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 10, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
           onClick={onClick}
           aria-label="پیمایش به پایین"
-          className="bg-primary text-primary-foreground shadow-primary/25 sticky bottom-0 left-1/2 z-20 mx-auto flex w-fit -translate-x-1/2 cursor-pointer! items-center gap-2 rounded-full p-3 text-xs font-medium shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
+          className="bg-primary text-primary-foreground shadow-primary/25 absolute right-1/2 bottom-4 z-20 translate-x-1/2 cursor-pointer! rounded-full p-3 shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95"
         >
-          <ArrowDown className="h-3.5 w-3.5" />
+          <ArrowDown className="h-4 w-4" />
         </motion.button>
       )}
     </AnimatePresence>

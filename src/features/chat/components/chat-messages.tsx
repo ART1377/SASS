@@ -9,7 +9,6 @@ import type { ChatMessage, MessageGroup, ReplyInfo, TypingUser } from '../types'
 import { ChatMessageSkeleton } from './chat-message-skeleton';
 import { DateSeparator, isDifferentDay } from './date-separator';
 import { MessageGroupBubble } from './message-group';
-import { ScrollButton } from './scroll-button';
 import { TypingIndicator } from './typing-indicator';
 
 interface Props {
@@ -31,6 +30,9 @@ interface Props {
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
+  // New props for scroll button
+  onScrollButtonVisible?: (visible: boolean) => void;
+  onScrollToBottomReady?: (fn: () => void) => void;
 }
 
 export function ChatMessages({
@@ -52,12 +54,13 @@ export function ChatMessages({
   onToggleSelect,
   onLongPress,
   onCopy,
+  onScrollButtonVisible,
+  onScrollToBottomReady,
 }: Props) {
   const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
 
   const {
     containerRef,
-    bottomRef,
     highlightedId,
     showScrollButton,
     setMessageRef,
@@ -70,6 +73,15 @@ export function ChatMessages({
     isLoadingMore: isLoadingOlder,
     isOwnLastMessage,
   });
+
+  // Expose scroll state and function to parent
+  useEffect(() => {
+    onScrollButtonVisible?.(showScrollButton);
+  }, [showScrollButton, onScrollButtonVisible]);
+
+  useEffect(() => {
+    onScrollToBottomReady?.(() => scrollToBottom());
+  }, [scrollToBottom, onScrollToBottomReady]);
 
   useEffect(() => {
     if (scrollToMessageId) {
@@ -123,11 +135,7 @@ export function ChatMessages({
   let lastRenderedDay: string | null = null;
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="relative flex-1 space-y-4 overflow-y-auto p-4 pb-6!"
-    >
+    <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto p-4">
       {isLoadingOlder && (
         <div className="flex justify-center py-2">
           <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
@@ -169,8 +177,12 @@ export function ChatMessages({
         {typingUsers.length > 0 && <TypingIndicator users={typingUsers} />}
       </AnimatePresence>
 
-      <ScrollButton visible={showScrollButton} onClick={scrollToBottom} />
-      <div ref={bottomRef} />
+      {/* Invisible bottom anchor */}
+      <div
+        ref={(el) => {
+          /* bottomRef is handled internally by useMessageScroll */
+        }}
+      />
     </div>
   );
 }

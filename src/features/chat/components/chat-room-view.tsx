@@ -12,6 +12,7 @@ import { ChatInput, type ChatInputHandle } from './chat-input';
 import { ChatMessages } from './chat-messages';
 import { ForwardDialog } from './forward-dialog';
 import { ReplyPreview } from './reply-preview';
+import { ScrollButton } from './scroll-button';
 
 export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   const {
@@ -27,10 +28,10 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     refetch,
     onlineCount,
     deleteMessageWithToast,
+    updateMessage,
     bulkDeleteMessagesWithToast,
     forwardMessagesWithToast,
     copyMessageWithToast,
-    updateMessage,
     hasOlderMessages,
     isLoadingOlder,
     loadOlderMessages,
@@ -48,6 +49,10 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [forwardOpen, setForwardOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // ─── Scroll state (lifted up) ───
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const scrollToBottomRef = useRef<(() => void) | null>(null);
 
   const handleEdit = useCallback((messageId: string, content: string) => {
     setEditingMessage({ id: messageId, content });
@@ -128,6 +133,11 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     setTimeout(() => setScrollToMessageId(messageId), 0);
   }, []);
 
+  // Capture scroll-to-bottom function from ChatMessages
+  const handleScrollToBottomReady = useCallback((fn: () => void) => {
+    scrollToBottomRef.current = fn;
+  }, []);
+
   if (isError) {
     return (
       <ErrorState
@@ -176,26 +186,34 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         )}
       </AnimatePresence>
 
-      <ChatMessages
-        messages={messages}
-        currentUserId={currentUser?.id || ''}
-        isLoading={isLoading}
-        typingUsers={typingUsers}
-        onReply={handleReply}
-        scrollToMessageId={scrollToMessageId}
-        onReplyClick={(messageId) => handleReplyClick(messageId)}
-        onEdit={handleEdit}
-        onDelete={handleDeleteRequest}
-        onRetry={retryMessage}
-        hasOlderMessages={hasOlderMessages}
-        isLoadingOlder={isLoadingOlder}
-        onLoadOlder={loadOlderMessages}
-        selectMode={selectMode}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onLongPress={enterSelectMode}
-        onCopy={copyMessageWithToast}
-      />
+      {/* Messages area with relative positioning for the scroll button */}
+      <div className="relative flex-1 overflow-hidden">
+        <ChatMessages
+          messages={messages}
+          currentUserId={currentUser?.id || ''}
+          isLoading={isLoading}
+          typingUsers={typingUsers}
+          onReply={handleReply}
+          scrollToMessageId={scrollToMessageId}
+          onReplyClick={(messageId) => handleReplyClick(messageId)}
+          onEdit={handleEdit}
+          onDelete={handleDeleteRequest}
+          onRetry={retryMessage}
+          hasOlderMessages={hasOlderMessages}
+          isLoadingOlder={isLoadingOlder}
+          onLoadOlder={loadOlderMessages}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onLongPress={enterSelectMode}
+          onCopy={copyMessageWithToast}
+          onScrollButtonVisible={setShowScrollButton}
+          onScrollToBottomReady={handleScrollToBottomReady}
+        />
+
+        {/* Scroll button positioned absolutely within this relative container */}
+        <ScrollButton visible={showScrollButton} onClick={() => scrollToBottomRef.current?.()} />
+      </div>
 
       {selectMode ? (
         <div className="bg-background flex items-center gap-3 border-t px-4 py-3">

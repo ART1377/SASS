@@ -46,14 +46,14 @@ export function MessageFooter({
         </button>
       )}
 
-      {!isPending && !selectMode && (
+      {!isPending && (
         <>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onCopy?.(message.content);
             }}
-            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
+            className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
             aria-label="کپی"
           >
             <Copy className="h-3 w-3" />
@@ -67,7 +67,7 @@ export function MessageFooter({
                 sender: { id: message.sender.id, name: message.sender.name },
               });
             }}
-            className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
+            className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:opacity-80 dark:hover:bg-white/10"
             aria-label="پاسخ"
           >
             <Reply className="h-3 w-3" />
@@ -79,7 +79,7 @@ export function MessageFooter({
                   e.stopPropagation();
                   onEdit?.(message.id, message.content);
                 }}
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-blue-500 hover:opacity-80 dark:hover:bg-white/10"
+                className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-blue-500 hover:opacity-80 dark:hover:bg-white/10"
                 aria-label="ویرایش"
               >
                 <Pencil className="h-3 w-3" />
@@ -89,7 +89,7 @@ export function MessageFooter({
                   e.stopPropagation();
                   onDelete?.(message.id);
                 }}
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-red-500 hover:opacity-80 dark:hover:bg-white/10"
+                className="flex h-6 w-6 cursor-pointer! items-center justify-center rounded-full opacity-40 transition-all hover:bg-black/5 hover:text-red-500 hover:opacity-80 dark:hover:bg-white/10"
                 aria-label="حذف"
               >
                 <Trash2 className="h-3 w-3" />

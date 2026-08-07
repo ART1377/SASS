@@ -24,11 +24,7 @@ export function useMessageScroll(
   const isNearBottom = useRef(true);
   const prevLength = useRef(0);
   const prevScrollHeight = useRef(0);
-  // Synchronous lock (not state) so a burst of scroll events in one tick
-  // can't each fire onReachTop before isLoadingMore state catches up.
   const isFetchingRef = useRef(false);
-  // Tells the auto-scroll effect to skip forced scrolling when a length
-  // increase came from prepending older history, not a new message.
   const justLoadedOlderRef = useRef(false);
 
   const setMessageRef = useCallback((id: string, el: HTMLDivElement | null) => {
@@ -36,8 +32,19 @@ export function useMessageScroll(
     else messageRefs.current.delete(id);
   }, []);
 
+  // Smooth scroll to bottom (for button click)
   const scrollToBottom = useCallback((instant = false) => {
-    bottomRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' });
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (instant) {
+      container.scrollTop = container.scrollHeight;
+    } else {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -76,9 +83,7 @@ export function useMessageScroll(
     justLoadedOlderRef.current = true;
   }, [isLoadingMore]);
 
-  // First load: position synchronously at the bottom (no rAF — a deferred
-  // scroll would let the top-load logic see scrollTop === 0 and fire
-  // early). Later loads: scroll to bottom only for genuinely new messages.
+  // First load: position synchronously at the bottom
   useLayoutEffect(() => {
     const isFirstLoad = prevLength.current === 0 && messagesLength > 0;
     const skipForOlderLoad = justLoadedOlderRef.current;
@@ -97,7 +102,7 @@ export function useMessageScroll(
     } else if (shouldScroll) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          scrollToBottom();
+          scrollToBottom(false); // Use instant for auto-scroll on new messages
           isNearBottom.current = true;
         });
       });
@@ -105,9 +110,7 @@ export function useMessageScroll(
     prevLength.current = messagesLength;
   }, [messagesLength, isOwnLastMessage, scrollToBottom]);
 
-  // Backfill: if there isn't enough history yet to make the container
-  // scrollable, load proactively (no scroll event would ever fire). Stops
-  // as soon as it becomes scrollable or history is exhausted.
+  // Backfill: if there isn't enough history to make the container scrollable
   useLayoutEffect(() => {
     if (!readyForTopLoad || isLoadingMore || !hasMore || isFetchingRef.current) return;
     const container = containerRef.current;
