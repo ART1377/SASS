@@ -27,7 +27,6 @@ export function ProjectCard({ project, onEdit, onDeleteRequest, onInvite }: Proj
       <div className="from-primary/5 pointer-events-none absolute inset-0 rounded-xl bg-linear-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        {' '}
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110">
             <span className="text-primary text-lg font-bold">{getInitials(project.name)}</span>

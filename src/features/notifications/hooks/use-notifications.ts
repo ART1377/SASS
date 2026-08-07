@@ -1,11 +1,9 @@
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { notificationsApi } from '../api/notifications-api';
 
 export function useNotifications() {
-  const queryClient = useQueryClient();
-
   const notificationsQuery = useQuery({
     queryKey: queryKeys.notifications.all,
     queryFn: notificationsApi.getAll,
