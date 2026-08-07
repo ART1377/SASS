@@ -3,7 +3,7 @@
 import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { CheckSquare, Hash, Trash2, Users } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { useChat } from '../hooks/use-chat';
@@ -36,7 +36,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     isLoadingOlder,
     loadOlderMessages,
     getReadBy,
-    registerMessageElement,
   } = useChat(chatRoom.id);
 
   const chatInputRef = useRef<ChatInputHandle>(null);
@@ -52,7 +51,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
   const [forwardOpen, setForwardOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  // ─── Scroll state (lifted up) ───
   const [showScrollButton, setShowScrollButton] = useState(false);
   const scrollToBottomRef = useRef<(() => void) | null>(null);
 
@@ -135,7 +133,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     setTimeout(() => setScrollToMessageId(messageId), 0);
   }, []);
 
-  // Capture scroll-to-bottom function from ChatMessages
   const handleScrollToBottomReady = useCallback((fn: () => void) => {
     scrollToBottomRef.current = fn;
   }, []);
@@ -150,8 +147,18 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     );
   }
 
+  // Helper to format typing text
+  const typingText = () => {
+    if (typingUsers.length === 0) return null;
+    if (typingUsers.length === 1) return `${typingUsers[0].userName} در حال تایپ...`;
+    if (typingUsers.length === 2)
+      return `${typingUsers[0].userName} و ${typingUsers[1].userName} در حال تایپ...`;
+    return `${typingUsers.length} نفر در حال تایپ...`;
+  };
+
   return (
     <>
+      {/* Header with typing indicator (Telegram-style) */}
       <div className="flex items-center gap-3 border-b px-4 py-3">
         <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-xl">
           {chatRoom.type === 'GROUP' ? (
@@ -162,9 +169,31 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold">{chatRoom.name}</h3>
-          <p className="text-muted-foreground text-xs">
-            {chatRoom._count?.members ?? 0} عضو • {onlineCount} آنلاین
-          </p>
+          <AnimatePresence mode="wait">
+            {typingUsers.length > 0 ? (
+              <motion.p
+                key="typing"
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                transition={{ duration: 0.2 }}
+                className="text-primary truncate text-xs font-medium"
+              >
+                {typingText()}
+              </motion.p>
+            ) : (
+              <motion.p
+                key="online"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.2 }}
+                className="text-muted-foreground text-xs"
+              >
+                {chatRoom._count?.members ?? 0} عضو • {onlineCount} آنلاین
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
 
         <Button
@@ -188,7 +217,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
         )}
       </AnimatePresence>
 
-      {/* Messages area with relative positioning for the scroll button */}
       <div className="relative flex-1 overflow-hidden">
         <ChatMessages
           messages={messages}
@@ -213,8 +241,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
           onScrollToBottomReady={handleScrollToBottomReady}
           getReadBy={getReadBy}
         />
-
-        {/* Scroll button positioned absolutely within this relative container */}
         <ScrollButton visible={showScrollButton} onClick={() => scrollToBottomRef.current?.()} />
       </div>
 

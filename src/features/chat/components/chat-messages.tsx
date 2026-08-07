@@ -9,7 +9,6 @@ import type { ChatMessage, MessageGroup, ReplyInfo, TypingUser } from '../types'
 import { ChatMessageSkeleton } from './chat-message-skeleton';
 import { DateSeparator, isDifferentDay } from './date-separator';
 import { MessageGroupBubble } from './message-group';
-import { TypingIndicator } from './typing-indicator';
 
 interface Props {
   messages: ChatMessage[];
@@ -174,10 +173,6 @@ export function ChatMessages({
             </div>
           );
         })}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {typingUsers.length > 0 && <TypingIndicator users={typingUsers} />}
       </AnimatePresence>
 
       {/* Invisible bottom anchor */}

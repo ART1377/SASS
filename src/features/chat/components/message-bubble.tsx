@@ -152,7 +152,7 @@ export function MessageBubble({
         )}
 
         {/* Message content */}
-        <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">
+        <p className="text-[13px] leading-relaxed wrap-break-word whitespace-pre-wrap">
           {message.content}
         </p>
 
