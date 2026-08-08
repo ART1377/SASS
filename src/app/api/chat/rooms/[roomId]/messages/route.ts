@@ -76,7 +76,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { content, replyToId, forwardedFromName, clientId } = await request.json();
+    const { content, replyToId, forwardedFromName } = await request.json();
     const trimmed = typeof content === 'string' ? content.trim() : '';
 
     if (!trimmed) {

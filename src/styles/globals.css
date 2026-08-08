@@ -682,6 +682,6 @@ body,
 .skeleton-shimmer {
   animation: shimmer 1.5s ease-in-out infinite;
 }
-a{
+a {
   cursor: pointer;
 }
