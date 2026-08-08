@@ -1,14 +1,15 @@
 'use client';
 
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { ProjectMembersSheet } from '@/features/projects/components/project-members-sheet';
 import { DeleteConfirmDialog } from '@/shared/components/delete-confirm-dialog';
 import { EmptyState } from '@/shared/components/empty-state';
 import { ErrorState } from '@/shared/components/error-state';
 import { Button } from '@/shared/components/ui/button';
-import { canMoveTasks } from '@/shared/lib/permissions';
+import { canMoveTask } from '@/shared/lib/permissions';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Columns, Plus } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useGlobalCommentListener } from '../hooks/use-global-comment-listener';
 import { useKanbanBoard } from '../hooks/use-kanban-board';
 import { useProjectMembers } from '../hooks/use-project-members';
@@ -65,6 +66,8 @@ export function KanbanBoard() {
     selectedProjectId !== 'all' ? selectedProjectId : undefined
   );
 
+  const [membersSheetOpen, setMembersSheetOpen] = useState(false);
+
   const { user: currentUser } = useAuth();
 
   const currentProject =
@@ -81,7 +84,7 @@ export function KanbanBoard() {
           false
         );
       }
-      return canMoveTasks(currentUser, currentProject, task);
+      return canMoveTask(currentUser, currentProject, task);
     },
     [currentProject, currentUser]
   );
@@ -109,6 +112,7 @@ export function KanbanBoard() {
           searchQuery={searchQuery}
           onClearFilters={clearFilters}
           user={currentUser}
+          onMembersClick={() => setMembersSheetOpen(true)}
         />
 
         {/* Content */}
@@ -200,6 +204,15 @@ export function KanbanBoard() {
           open={!!viewingTask}
           onOpenChange={closeView}
           currentUserId={currentUser?.id}
+        />
+      )}
+
+      {currentProject && (
+        <ProjectMembersSheet
+          project={currentProject}
+          currentUserId={currentUser?.id || ''}
+          open={membersSheetOpen}
+          onOpenChange={setMembersSheetOpen}
         />
       )}
     </>

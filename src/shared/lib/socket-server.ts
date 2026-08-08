@@ -317,53 +317,60 @@ export function initSocketServer(server: NetServer) {
         if (!userId) return;
 
         const trimmed = (data.content || '').trim();
-        if (!trimmed) return;
-        if (trimmed.length > MAX_COMMENT_LENGTH) return;
+        if (!trimmed || trimmed.length > MAX_COMMENT_LENGTH) return;
 
-        const comment = await prisma.taskComment.create({
-          data: {
-            taskId: data.taskId,
-            userId,
-            content: trimmed,
-          },
-          include: commentInclude,
-        });
-
-        io?.emit('comment:new', { taskId: data.taskId, comment });
-
+        // Verify user is member of the task's project
         const task = await prisma.task.findUnique({
           where: { id: data.taskId },
           select: {
+            projectId: true,
             title: true,
-            assigneeId: true,
             creatorId: true,
-            project: { select: { name: true } },
+            assignees: { select: { userId: true } },
+            project: {
+              select: {
+                ownerId: true,
+                members: { where: { userId }, select: { id: true } },
+              },
+            },
           },
         });
+        if (!task) return;
+        const isProjectMember = task.project.ownerId === userId || task.project.members.length > 0;
+        if (!isProjectMember) return;
 
-        if (task) {
-          const notifyUsers = new Set<string>();
-          if (task.assigneeId && task.assigneeId !== userId) notifyUsers.add(task.assigneeId);
-          if (task.creatorId && task.creatorId !== userId) notifyUsers.add(task.creatorId);
+        const comment = await prisma.taskComment.create({
+          data: { taskId: data.taskId, userId, content: trimmed },
+          include: { user: { select: { id: true, name: true, avatar: true } } },
+        });
 
-          for (const uid of notifyUsers) {
-            await prisma.notification.create({
-              data: {
-                userId: uid,
-                title: 'نظر جدید',
-                message: `نظر جدیدی روی تسک "${task.title}" ثبت شد`,
-                type: 'COMMENT_ADDED',
-              },
-            });
+        // Emit to project room (ensure sender is in room)
+        const projectRoom = `project:${task.projectId}`;
+        socket.join(projectRoom);
+        io?.to(projectRoom).emit('comment:new', { taskId: data.taskId, comment });
 
-            sendSSENotification({
+        // Notify assignees and creator (except sender)
+        const notifyUsers = new Set<string>();
+        task.assignees.forEach((a) => notifyUsers.add(a.userId));
+        notifyUsers.add(task.creatorId);
+        notifyUsers.delete(userId);
+
+        for (const uid of notifyUsers) {
+          await prisma.notification.create({
+            data: {
               userId: uid,
-              type: 'COMMENT_ADDED',
               title: 'نظر جدید',
               message: `نظر جدیدی روی تسک "${task.title}" ثبت شد`,
-              data: { taskId: data.taskId, projectId: task.project?.name },
-            });
-          }
+              type: 'COMMENT_ADDED',
+            },
+          });
+          sendSSENotification({
+            userId: uid,
+            type: 'COMMENT_ADDED',
+            title: 'نظر جدید',
+            message: `نظر جدیدی روی تسک "${task.title}" ثبت شد`,
+            data: { taskId: data.taskId, projectId: task.projectId },
+          });
         }
       } catch (error) {
         console.error('[Socket] comment:add error:', error);

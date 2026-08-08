@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Columns, List, Plus, RotateCcw } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/shared/components/ui/tooltip';
+import { Columns, List, Plus, RotateCcw, Users } from 'lucide-react';
 
 const SORT_OPTIONS = [
   { value: 'createdAt_desc', label: 'جدیدترین' },
@@ -38,6 +44,7 @@ interface KanbanToolbarProps {
   setViewMode: (v: 'kanban' | 'list') => void;
   onCreateClick: () => void;
   onClearFilters: () => void;
+  onMembersClick?: () => void;
 
   members?: { user: { id: string; name: string } }[];
   searchQuery?: string;
@@ -58,6 +65,7 @@ export function KanbanToolbar({
   setViewMode,
   onCreateClick,
   onClearFilters,
+  onMembersClick,
   searchQuery,
   members = [],
   user,
@@ -68,6 +76,10 @@ export function KanbanToolbar({
     assigneeFilter !== 'all' ||
     combinedSort !== 'createdAt_desc' ||
     (searchQuery && searchQuery.length > 0);
+
+  const currentProject =
+    selectedProjectId !== 'all' ? projects.find((p) => p.id === selectedProjectId) : null;
+  const memberCount = currentProject?._count?.members ?? 0;
 
   return (
     <div className="space-y-3">
@@ -183,25 +195,54 @@ export function KanbanToolbar({
         )}
       </div>
 
-      {/* Row 3: View toggle + Create */}
+      {/* Row 3: View toggle + Members + Create */}
       <div className="flex items-center justify-between">
-        <div className="bg-primary/10 flex items-center gap-1 rounded-xl p-1">
-          <Button
-            variant={viewMode === 'kanban' ? 'default' : 'ghost'}
-            size="icon"
-            className="h-8 w-8 rounded-lg"
-            onClick={() => setViewMode('kanban')}
-          >
-            <Columns className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'ghost'}
-            size="icon"
-            className="h-8 w-8 rounded-lg"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/10 flex items-center gap-1 rounded-xl p-1">
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setViewMode('kanban')}
+            >
+              <Columns className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Members button — with tooltip + label on larger screens */}
+          {selectedProjectId !== 'all' && onMembersClick && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onMembersClick}
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted h-8 gap-1.5 rounded-lg text-xs font-medium transition-all active:scale-95"
+                  >
+                    <Users className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">اعضا</span>
+                    {memberCount > 0 && (
+                      <span className="bg-muted-foreground/15 rounded-full px-1.5 py-0.5 text-[10px] leading-none font-medium">
+                        {memberCount}
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-[11px]">
+                  مشاهده و مدیریت اعضای پروژه
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         <Button size={'sm'} onClick={onCreateClick} className="shadow-primary/20 gap-2 shadow-lg">

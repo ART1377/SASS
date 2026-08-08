@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { StatusBadge } from '@/shared/components/ui/status-badge';
-import { canDeleteTask, canEditTask, canMoveTasks } from '@/shared/lib/permissions';
+import { canDeleteTask, canEditTask, canMoveTask } from '@/shared/lib/permissions';
 import { getInitials } from '@/shared/lib/utils';
 import { usePresence } from '@/shared/providers/presence-provider';
 import { Calendar, GripVertical, MessageSquare, Pencil, Trash2 } from 'lucide-react';
@@ -46,7 +46,7 @@ export const TaskCard = memo(function TaskCard({
         task.creatorId === user.id || task.assignees?.some((a) => a.userId === user.id) || false
       );
     }
-    return canMoveTasks(user, project, task);
+    return canMoveTask(user, project, task);
   })();
 
   const userCanEdit = (() => {

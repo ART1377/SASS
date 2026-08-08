@@ -1,9 +1,8 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
 import { sendSSENotification } from '@/shared/lib/sse';
-import { NextResponse } from 'next/server';
-
 import type { Prisma } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
   try {
@@ -21,22 +20,39 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    const where: Prisma.TaskWhereInput = {};
+    // Base filter: only tasks from projects the user belongs to
+    const where: Prisma.TaskWhereInput = {
+      project: {
+        OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id } } }],
+      },
+    };
 
-    if (projectId) where.projectId = projectId;
+    if (projectId) {
+      // Override with specific project (but still check membership later)
+      where.projectId = projectId;
+    }
     if (status) where.status = status;
     if (priority) where.priority = priority;
-    if (assigneeId) {
-      where.assignees = { some: { userId: assigneeId } };
-    }
-
+    if (assigneeId) where.assignees = { some: { userId: assigneeId } };
     if (search) {
       where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
     }
 
+    // Ensure the user is a member of the requested project
+    if (projectId) {
+      const isMember = await prisma.projectMember.findFirst({
+        where: { projectId, userId: session.user.id },
+      });
+      const isOwner = await prisma.project.findFirst({
+        where: { id: projectId, ownerId: session.user.id },
+      });
+      if (!isMember && !isOwner) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const orderBy: Prisma.TaskOrderByWithRelationInput[] = [];
     const direction: Prisma.SortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
-
     switch (sortBy) {
       case 'dueDate':
         orderBy.push({ dueDate: { sort: direction, nulls: 'last' } });
@@ -52,9 +68,7 @@ export async function GET(request: Request) {
       where,
       include: {
         assignees: {
-          include: {
-            user: { select: { id: true, name: true, avatar: true } },
-          },
+          include: { user: { select: { id: true, name: true, avatar: true } } },
         },
         creator: { select: { id: true, name: true, avatar: true } },
         project: { select: { id: true, name: true } },
@@ -84,6 +98,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'عنوان و پروژه الزامی هستند' }, { status: 400 });
     }
 
+    // Check membership: user must be owner, ADMIN, or MANAGER of the project
+    const member = await prisma.projectMember.findFirst({
+      where: { projectId, userId: session.user.id },
+    });
+    const isOwner = await prisma.project.findFirst({
+      where: { id: projectId, ownerId: session.user.id },
+    });
+
+    if (!isOwner && (!member || (member.role !== 'ADMIN' && member.role !== 'MANAGER'))) {
+      return NextResponse.json(
+        { error: 'شما اجازه ایجاد تسک در این پروژه را ندارید' },
+        { status: 403 }
+      );
+    }
+
     const task = await prisma.task.create({
       data: {
         title,
@@ -93,17 +122,11 @@ export async function POST(request: Request) {
         creatorId: session.user.id,
         dueDate: dueDate ? new Date(dueDate) : null,
         assignees: assigneeIds?.length
-          ? {
-              create: assigneeIds.map((userId: string) => ({ userId })),
-            }
+          ? { create: assigneeIds.map((userId: string) => ({ userId })) }
           : undefined,
       },
       include: {
-        assignees: {
-          include: {
-            user: { select: { id: true, name: true, avatar: true } },
-          },
-        },
+        assignees: { include: { user: { select: { id: true, name: true, avatar: true } } } },
         creator: { select: { id: true, name: true, avatar: true } },
         project: { select: { id: true, name: true } },
         _count: { select: { comments: true } },

@@ -5,19 +5,31 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id: taskId } = await params;
 
-    const comments = await prisma.taskComment.findMany({
-      where: { taskId },
-      include: {
-        user: {
-          select: { id: true, name: true, avatar: true },
+    // Check user is member of the task's project
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        projectId: true,
+        project: {
+          select: {
+            ownerId: true,
+            members: { where: { userId: session.user.id }, select: { id: true } },
+          },
         },
       },
+    });
+    if (!task) return NextResponse.json({ error: 'تسک یافت نشد' }, { status: 404 });
+    if (task.project.ownerId !== session.user.id && task.project.members.length === 0) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const comments = await prisma.taskComment.findMany({
+      where: { taskId },
+      include: { user: { select: { id: true, name: true, avatar: true } } },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -28,14 +40,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-// POST is no longer the primary path – socket handles persistence.
-// Keeping it as fallback for disconnected clients.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id: taskId } = await params;
     const { content } = await request.json();
@@ -44,17 +52,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'متن نظر نمی‌تواند خالی باشد' }, { status: 400 });
     }
 
-    const comment = await prisma.taskComment.create({
-      data: {
-        taskId,
-        userId: session.user.id,
-        content: content.trim(),
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, avatar: true },
+    // Check membership
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        projectId: true,
+        project: {
+          select: {
+            ownerId: true,
+            members: { where: { userId: session.user.id }, select: { id: true } },
+          },
         },
       },
+    });
+    if (!task) return NextResponse.json({ error: 'تسک یافت نشد' }, { status: 404 });
+    if (task.project.ownerId !== session.user.id && task.project.members.length === 0) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const comment = await prisma.taskComment.create({
+      data: { taskId, userId: session.user.id, content: content.trim() },
+      include: { user: { select: { id: true, name: true, avatar: true } } },
     });
 
     return NextResponse.json(comment, { status: 201 });

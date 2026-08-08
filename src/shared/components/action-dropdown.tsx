@@ -31,7 +31,7 @@ export function ActionDropdown({ items, align = 'end' }: ActionDropdownProps) {
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="hover:bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-lg p-1"
+          className="hover:bg-primary/20 group-hover:bg-primary/10 group-hover:text-primary flex h-8 w-8 shrink-0 cursor-pointer! items-center justify-center rounded-lg p-1 transition duration-300"
         >
           <MoreVertical className="text-muted-foreground h-4 w-4" />
         </button>

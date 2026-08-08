@@ -195,16 +195,17 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
             )}
           </AnimatePresence>
         </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setSelectMode((prev) => !prev)}
-          aria-label="انتخاب پیام"
-        >
-          <CheckSquare className="h-4 w-4" />
-        </Button>
+        {Boolean(messages.length) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setSelectMode((prev) => !prev)}
+            aria-label="انتخاب پیام"
+          >
+            <CheckSquare className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       <AnimatePresence>

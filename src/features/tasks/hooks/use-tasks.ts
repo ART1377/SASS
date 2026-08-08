@@ -3,7 +3,7 @@
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { useOptimisticMutation } from '@/shared/hooks/use-optimistic-mutation';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { tasksApi } from '../api/tasks-api';
 import type { Task, UpdateTaskInput } from '../types';
 
@@ -18,7 +18,6 @@ interface UseTasksFilters {
 }
 
 export function useTasks(filters: UseTasksFilters = {}) {
-  const queryClient = useQueryClient();
   const { projectId, ...restFilters } = filters;
 
   const tasksQuery = useQuery({

@@ -11,27 +11,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
 
+    // Verify user is a member or owner
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
-        owner: {
-          select: { id: true, name: true, avatar: true },
-        },
+        owner: { select: { id: true, name: true, avatar: true } },
         members: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true, avatar: true },
-            },
-          },
+          include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
         },
-        _count: {
-          select: { tasks: true, members: true },
-        },
+        _count: { select: { tasks: true, members: true } },
       },
     });
 
     if (!project) {
       return NextResponse.json({ error: 'پروژه یافت نشد' }, { status: 404 });
+    }
+
+    const isOwner = project.ownerId === session.user.id;
+    const isMember = project.members.some((m) => m.userId === session.user.id);
+    if (!isOwner && !isMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     return NextResponse.json(project);
@@ -41,6 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
+// PATCH: also need to allow ADMIN role (not just owner)
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
@@ -51,14 +51,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const { name, description } = await request.json();
 
-    const project = await prisma.project.findUnique({ where: { id } });
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: { members: { where: { userId: session.user.id }, select: { role: true } } },
+    });
 
     if (!project) {
       return NextResponse.json({ error: 'پروژه یافت نشد' }, { status: 404 });
     }
 
-    if (project.ownerId !== session.user.id) {
-      return NextResponse.json({ error: 'شما مالک این پروژه نیستید' }, { status: 403 });
+    const isOwner = project.ownerId === session.user.id;
+    const isAdmin = project.members.some((m) => m.role === 'ADMIN');
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'شما اجازه ویرایش این پروژه را ندارید' }, { status: 403 });
     }
 
     const updatedProject = await prisma.project.update({
@@ -67,12 +73,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       include: {
         owner: { select: { id: true, name: true, avatar: true } },
         members: {
-          // ← ADD THIS
-          include: {
-            user: {
-              select: { id: true, name: true, email: true, avatar: true },
-            },
-          },
+          include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
         },
         _count: { select: { tasks: true, members: true } },
       },

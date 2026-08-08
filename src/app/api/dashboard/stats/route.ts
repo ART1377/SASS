@@ -13,7 +13,13 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    // Run all queries in parallel for performance
+    // Common filter: only projects where the user is a member (or owner)
+    const userProjectFilter = {
+      project: {
+        OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+      },
+    };
+
     const [
       totalProjects,
       activeProjects,
@@ -31,7 +37,7 @@ export async function GET() {
         },
       }),
 
-      // Active projects
+      // Active projects (has at least one non-DONE task)
       prisma.project.count({
         where: {
           OR: [{ ownerId: userId }, { members: { some: { userId } } }],
@@ -39,10 +45,11 @@ export async function GET() {
         },
       }),
 
-      // Total tasks assigned to user
+      // Total tasks (assigned to user OR created by user) within their projects
       prisma.task.count({
         where: {
-          OR: [{ assigneeId: userId }, { creatorId: userId }],
+          ...userProjectFilter,
+          OR: [{ assignees: { some: { userId } } }, { creatorId: userId }],
         },
       }),
 
@@ -50,7 +57,8 @@ export async function GET() {
       prisma.task.groupBy({
         by: ['status'],
         where: {
-          OR: [{ assigneeId: userId }, { creatorId: userId }],
+          ...userProjectFilter,
+          OR: [{ assignees: { some: { userId } } }, { creatorId: userId }],
         },
         _count: true,
       }),
@@ -63,23 +71,18 @@ export async function GET() {
         select: {
           id: true,
           name: true,
-          _count: {
-            select: {
-              tasks: true,
-            },
-          },
-          tasks: {
-            select: { status: true },
-          },
+          _count: { select: { tasks: true } },
+          tasks: { select: { status: true } },
         },
         take: 5,
         orderBy: { createdAt: 'desc' },
       }),
 
-      // Upcoming deadlines (next 7 days)
+      // Upcoming deadlines (next 7 days) – only tasks from user's projects
       prisma.task.findMany({
         where: {
-          OR: [{ assigneeId: userId }, { creatorId: userId }],
+          ...userProjectFilter,
+          OR: [{ assignees: { some: { userId } } }, { creatorId: userId }],
           dueDate: {
             gte: new Date(),
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -98,21 +101,22 @@ export async function GET() {
         take: 5,
       }),
 
-      // Recent activities (last 10 changes)
+      // Recent activities – from user's projects
       prisma.task.findMany({
         where: {
-          OR: [
-            { assigneeId: userId },
-            { creatorId: userId },
-            { project: { members: { some: { userId } } } },
-          ],
+          project: {
+            OR: [{ ownerId: userId }, { members: { some: { userId } } }],
+          },
         },
         select: {
           id: true,
           title: true,
           status: true,
           updatedAt: true,
-          assignee: { select: { id: true, name: true } },
+          assignees: {
+            take: 1,
+            select: { user: { select: { id: true, name: true } } },
+          },
           creator: { select: { id: true, name: true } },
           project: { select: { id: true, name: true } },
         },
@@ -120,7 +124,7 @@ export async function GET() {
         take: 10,
       }),
 
-      // Total team members
+      // Total team members (unique users across user's projects)
       prisma.projectMember.count({
         where: {
           project: {
@@ -158,7 +162,8 @@ export async function GET() {
       status: task.status,
       projectName: task.project.name,
       updatedAt: task.updatedAt.toISOString(),
-      assignee: task.assignee?.name || 'Unassigned',
+      // Show first assignee or 'Unassigned'
+      assignee: task.assignees[0]?.user?.name || 'Unassigned',
       creator: task.creator.name,
     }));
 

@@ -41,11 +41,9 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
   return (
     <div className="flex h-full flex-col">
       <div className="border-b p-4 pt-0">
-        {rooms.length > 3 && (
-          <div className="mt-3">
-            <SearchInputURL placeholder="جستجوی چت..." className="w-full" />
-          </div>
-        )}
+        <div className="mt-3">
+          <SearchInputURL placeholder="جستجوی چت..." className="w-full" />
+        </div>
       </div>
 
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
@@ -78,8 +76,8 @@ export function ChatRoomList({ rooms, selectedRoom, onSelectRoom }: ChatRoomList
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="truncate text-sm font-medium">{room.name}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-medium">{room.name}</p>
                   {room.lastMessage && (
                     <span className="text-muted-foreground/50 shrink-0 text-[10px]">
                       {formatDateTime(room.lastMessage.createdAt)}
