@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useMessageScroll } from '../hooks/use-message-scroll';
-import type { ChatMessage, MessageGroup, ReplyInfo, TypingUser } from '../types';
+import type { ChatMessage, MessageGroup, ReplyInfo } from '../types';
 import { ChatMessageSkeleton } from './chat-message-skeleton';
 import { DateSeparator, isDifferentDay } from './date-separator';
 import { MessageGroupBubble } from './message-group';
@@ -14,7 +14,6 @@ interface Props {
   messages: ChatMessage[];
   currentUserId: string;
   isLoading: boolean;
-  typingUsers: TypingUser[];
   onReply: (message: ReplyInfo) => void;
   scrollToMessageId: string | null;
   onReplyClick?: (messageId: string) => void;
@@ -39,7 +38,6 @@ export function ChatMessages({
   messages,
   currentUserId,
   isLoading,
-  typingUsers,
   onReply,
   scrollToMessageId,
   onReplyClick,

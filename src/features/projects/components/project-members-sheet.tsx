@@ -75,7 +75,6 @@ export function ProjectMembersSheet({ project, currentUserId, open, onOpenChange
   const { isUserOnline } = usePresence();
   const updateRoleMutation = useUpdateMemberRole(project.id);
 
-  const owner = project.owner ?? { id: '', name: 'ناشناخته', avatar: null };
   const members = project.members ?? [];
   const isOwner = project.ownerId === currentUserId;
   const canManageRoles = canManageProject({ id: currentUserId }, project); // owner or ADMIN

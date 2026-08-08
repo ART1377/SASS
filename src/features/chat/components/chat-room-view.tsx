@@ -223,7 +223,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
           messages={messages}
           currentUserId={currentUser?.id || ''}
           isLoading={isLoading}
-          typingUsers={typingUsers}
           onReply={handleReply}
           scrollToMessageId={scrollToMessageId}
           onReplyClick={(messageId) => handleReplyClick(messageId)}
