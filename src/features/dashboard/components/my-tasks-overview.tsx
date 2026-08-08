@@ -34,8 +34,7 @@ const statusBarColors: Record<string, string> = {
 const statuses = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const;
 
 export function MyTasksOverview({ stats }: MyTasksOverviewProps) {
-  const total = stats.totalTasks || 1; // prevent division by zero
-  const tasksArray = statuses.map((s) => stats.statusCounts[s] || 0);
+  const total = stats.totalTasks || 1;
   const donePercent = Math.round((stats.statusCounts.DONE / total) * 100);
 
   return (

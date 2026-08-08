@@ -22,7 +22,6 @@ interface MessageBubbleProps {
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
   readBy?: string[];
-  totalMembers?: number;
 }
 
 export function MessageBubble({
@@ -41,7 +40,6 @@ export function MessageBubble({
   onLongPress,
   onCopy,
   readBy,
-  totalMembers,
 }: MessageBubbleProps) {
   const isPending = message.status === 'sending' || message.status === 'failed';
   const isSent = !isPending && !message.status;
@@ -196,7 +194,6 @@ export function MessageBubble({
           message={message}
           isOwn={isOwn}
           isPending={isPending}
-          selectMode={selectMode}
           onReply={onReply}
           onEdit={onEdit}
           onDelete={onDelete}

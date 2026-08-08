@@ -8,7 +8,6 @@ interface MessageFooterProps {
   message: ChatMessage;
   isOwn: boolean;
   isPending: boolean;
-  selectMode?: boolean;
   onReply: (message: ReplyInfo) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
@@ -20,7 +19,6 @@ export function MessageFooter({
   message,
   isOwn,
   isPending,
-  selectMode,
   onReply,
   onEdit,
   onDelete,

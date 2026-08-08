@@ -41,10 +41,6 @@ const messageInclude = {
   },
 } as const;
 
-const commentInclude = {
-  user: { select: { id: true, name: true, avatar: true } },
-} as const;
-
 export function getIO() {
   if (!io) throw new Error('Socket.io not initialized');
   return io;
