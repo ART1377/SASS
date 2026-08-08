@@ -1,5 +1,6 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
+import { pusherServer } from '@/shared/lib/pusher-server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -74,6 +75,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       data: { taskId, userId: session.user.id, content: content.trim() },
       include: { user: { select: { id: true, name: true, avatar: true } } },
     });
+
+    // Broadcast via Pusher to the global comments channel
+    if (task) {
+      await pusherServer.trigger(`project-${taskId}`, 'comment:new', {
+        taskId,
+        comment,
+      });
+    }
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {

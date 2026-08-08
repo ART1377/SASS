@@ -1,15 +1,16 @@
 'use client';
 
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useSocket } from '@/shared/providers/socket-provider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+import Pusher from 'pusher-js';
 import { useEffect } from 'react';
 import { tasksApi } from '../api/tasks-api';
 import type { TaskComment } from '../types';
 
 export function useTaskComments(taskId: string, enabled: boolean) {
   const queryClient = useQueryClient();
-  const { socket, isConnected } = useSocket();
+  const { data: session } = useSession();
 
   const commentsQuery = useQuery({
     queryKey: queryKeys.tasks.comments(taskId),
@@ -20,21 +21,21 @@ export function useTaskComments(taskId: string, enabled: boolean) {
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: (content: string) => {
-      return new Promise<void>((resolve, reject) => {
-        if (!socket || !isConnected) {
-          reject(new Error('اتصال برقرار نیست'));
-          return;
-        }
-        socket.emit('comment:add', { taskId, content });
-        resolve();
-      });
+    mutationFn: async (content: string) => {
+      // Send comment via REST API (server will broadcast via Pusher)
+      await tasksApi.addComment(taskId, content);
     },
   });
 
-  // Listen for real‑time comments (only updates the comments list)
+  // Listen for real‑time comments via Pusher
   useEffect(() => {
-    if (!socket) return;
+    if (!enabled || !session?.user?.id) return;
+
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    });
+
+    const channel = pusher.subscribe(`project-${taskId}`);
 
     const handleComment = (data: { taskId: string; comment: TaskComment }) => {
       if (data.taskId !== taskId) return;
@@ -46,11 +47,14 @@ export function useTaskComments(taskId: string, enabled: boolean) {
       });
     };
 
-    socket.on('comment:new', handleComment);
+    channel.bind('comment:new', handleComment);
+
     return () => {
-      socket.off('comment:new', handleComment);
+      channel.unbind('comment:new', handleComment);
+      pusher.unsubscribe(`project-${taskId}`);
+      pusher.disconnect();
     };
-  }, [socket, taskId, queryClient]);
+  }, [taskId, enabled, queryClient, session?.user?.id]);
 
   return {
     comments: commentsQuery.data ?? [],

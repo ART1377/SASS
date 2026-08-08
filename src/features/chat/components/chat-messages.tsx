@@ -28,10 +28,11 @@ interface Props {
   onToggleSelect?: (id: string) => void;
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
-  // New props for scroll button
   onScrollButtonVisible?: (visible: boolean) => void;
   onScrollToBottomReady?: (fn: () => void) => void;
   getReadBy?: (messageId: string, excludeUserId?: string) => string[];
+  /** Registers a message's DOM node for visibility-based read tracking. */
+  registerMessageElement?: (messageId: string, el: HTMLElement | null) => void;
 }
 
 export function ChatMessages({
@@ -55,6 +56,7 @@ export function ChatMessages({
   onScrollButtonVisible,
   onScrollToBottomReady,
   getReadBy,
+  registerMessageElement,
 }: Props) {
   const isOwnLastMessage = messages[messages.length - 1]?.senderId === currentUserId;
 
@@ -73,7 +75,6 @@ export function ChatMessages({
     isOwnLastMessage,
   });
 
-  // Expose scroll state and function to parent
   useEffect(() => {
     onScrollButtonVisible?.(showScrollButton);
   }, [showScrollButton, onScrollButtonVisible]);
@@ -167,6 +168,7 @@ export function ChatMessages({
                 onLongPress={onLongPress}
                 onCopy={onCopy}
                 getReadBy={getReadBy}
+                registerMessageElement={registerMessageElement}
               />
             </div>
           );

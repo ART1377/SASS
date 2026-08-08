@@ -36,6 +36,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     isLoadingOlder,
     loadOlderMessages,
     getReadBy,
+    registerMessageElement, // ← ADDED
   } = useChat(chatRoom.id);
 
   const chatInputRef = useRef<ChatInputHandle>(null);
@@ -147,7 +148,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
     );
   }
 
-  // Helper to format typing text
   const typingText = () => {
     if (typingUsers.length === 0) return null;
     if (typingUsers.length === 1) return `${typingUsers[0].userName} در حال تایپ...`;
@@ -158,7 +158,6 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
 
   return (
     <>
-      {/* Header with typing indicator (Telegram-style) */}
       <div className="flex items-center gap-3 border-b px-4 py-3">
         <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-xl">
           {chatRoom.type === 'GROUP' ? (
@@ -240,6 +239,7 @@ export function ChatRoomView({ chatRoom }: { chatRoom: ChatRoom }) {
           onScrollButtonVisible={setShowScrollButton}
           onScrollToBottomReady={handleScrollToBottomReady}
           getReadBy={getReadBy}
+          registerMessageElement={registerMessageElement} // ← ADDED
         />
         <ScrollButton visible={showScrollButton} onClick={() => scrollToBottomRef.current?.()} />
       </div>

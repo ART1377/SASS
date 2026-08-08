@@ -1,5 +1,6 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
+import { pusherServer } from '@/shared/lib/pusher-server';
 import { NextResponse } from 'next/server';
 
 const MAX_MESSAGE_LENGTH = 1000;
@@ -53,6 +54,8 @@ export async function PATCH(
       include: messageInclude,
     });
 
+    await pusherServer.trigger(`presence-room-${roomId}`, 'message:updated', updated);
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Update message error:', error);
@@ -79,6 +82,11 @@ export async function DELETE(
     }
 
     await prisma.chatMessage.delete({ where: { id: messageId } });
+
+    await pusherServer.trigger(`presence-room-${roomId}`, 'message:deleted', {
+      roomId,
+      messageId,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

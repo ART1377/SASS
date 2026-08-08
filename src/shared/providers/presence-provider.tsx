@@ -1,7 +1,8 @@
 'use client';
 
-import { useSocket } from '@/shared/providers/socket-provider';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useSession } from 'next-auth/react';
+import Pusher from 'pusher-js';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 // ---------- context ----------
 interface PresenceContextType {
@@ -20,38 +21,61 @@ export function usePresence() {
 
 // ---------- provider ----------
 export function PresenceProvider({ children }: { children: ReactNode }) {
-  const { socket } = useSocket();
+  const { data: session } = useSession();
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const pusherRef = useRef<Pusher | null>(null);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!session?.user?.id) return;
 
-    const handleOnlineList = (users: { userId: string; name: string }[]) => {
-      setOnlineUsers(new Set(users.map((u) => u.userId)));
-    };
+    // Import the singleton from use-chat-pusher
+    let presencePusher: Pusher | null = null;
 
-    const handleUserOnline = (data: { userId: string; name: string }) => {
-      setOnlineUsers((prev) => new Set(prev).add(data.userId));
-    };
+    function getPresencePusher(): Pusher {
+      if (!presencePusher) {
+        presencePusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+          cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+          authEndpoint: '/api/pusher/auth',
+        });
+      }
+      return presencePusher;
+    }
 
-    const handleUserOffline = (data: { userId: string; name: string }) => {
+    // In useEffect:
+    const pusher = getPresencePusher();
+
+    // Subscribe to a global presence channel for online users
+    const presenceChannel = pusher.subscribe('presence-online');
+
+    presenceChannel.bind('pusher:subscription_succeeded', (members: any) => {
+      const userIds = new Set<string>();
+      members.each((member: any) => {
+        userIds.add(member.id);
+      });
+      setOnlineUsers(userIds);
+    });
+
+    presenceChannel.bind('pusher:member_added', (member: any) => {
+      setOnlineUsers((prev) => new Set(prev).add(member.id));
+    });
+
+    presenceChannel.bind('pusher:member_removed', (member: any) => {
       setOnlineUsers((prev) => {
         const next = new Set(prev);
-        next.delete(data.userId);
+        next.delete(member.id);
         return next;
       });
-    };
+    });
 
-    socket.on('users:online_list', handleOnlineList);
-    socket.on('user:online', handleUserOnline);
-    socket.on('user:offline', handleUserOffline);
+    pusherRef.current = pusher;
 
     return () => {
-      socket.off('users:online_list', handleOnlineList);
-      socket.off('user:online', handleUserOnline);
-      socket.off('user:offline', handleUserOffline);
+      presenceChannel.unbind_all();
+      pusher.unsubscribe('presence-online');
+      pusher.disconnect();
+      pusherRef.current = null;
     };
-  }, [socket]);
+  }, [session?.user?.id]);
 
   const isUserOnline = (userId: string) => onlineUsers.has(userId);
 

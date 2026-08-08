@@ -1,6 +1,6 @@
 'use client';
 
-import { useSocket } from '@/shared/providers/socket-provider';
+import { apiClient } from '@/shared/config/axios';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface ReadReceipt {
@@ -10,15 +10,18 @@ interface ReadReceipt {
 }
 
 export function useReadReceipts(roomId: string) {
-  const { socket, isConnected } = useSocket();
   const [readReceipts, setReadReceipts] = useState<Map<string, Set<string>>>(new Map());
   const observerRef = useRef<IntersectionObserver | null>(null);
   const pendingReadsRef = useRef<Set<string>>(new Set());
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Listen for read receipts from other users
+  // Listen for read receipts from other users via Pusher
   useEffect(() => {
-    if (!socket) return;
+    const pusher = (window as any).__pusherInstance;
+    if (!pusher) return;
+
+    const channel = pusher.channel(`presence-room-${roomId}`);
+    if (!channel) return;
 
     const handleReadReceipt = (data: ReadReceipt & { roomId: string }) => {
       if (data.roomId !== roomId) return;
@@ -34,21 +37,25 @@ export function useReadReceipts(roomId: string) {
       });
     };
 
-    socket.on('messages:read_receipt', handleReadReceipt);
+    channel.bind('messages:read_receipt', handleReadReceipt);
     return () => {
-      socket.off('messages:read_receipt', handleReadReceipt);
+      channel.unbind('messages:read_receipt', handleReadReceipt);
     };
-  }, [socket, roomId]);
+  }, [roomId]);
 
-  // Flush pending reads to server
-  const flushPendingReads = useCallback(() => {
-    if (pendingReadsRef.current.size === 0 || !socket || !isConnected) return;
+  // Flush pending reads to server via REST API
+  const flushPendingReads = useCallback(async () => {
+    if (pendingReadsRef.current.size === 0) return;
 
     const messageIds = Array.from(pendingReadsRef.current);
     pendingReadsRef.current.clear();
 
-    socket.emit('messages:read', { roomId, messageIds });
-  }, [socket, isConnected, roomId]);
+    try {
+      await apiClient.post(`/chat/rooms/${roomId}/read-receipts`, { messageIds });
+    } catch (error) {
+      console.error('Failed to send read receipts:', error);
+    }
+  }, [roomId]);
 
   // Mark messages as read (batched with debounce)
   const markAsRead = useCallback(
@@ -65,7 +72,7 @@ export function useReadReceipts(roomId: string) {
 
       flushTimeoutRef.current = setTimeout(() => {
         flushPendingReads();
-      }, 500);
+      }, 2000);
     },
     [flushPendingReads]
   );
@@ -126,6 +133,30 @@ export function useReadReceipts(roomId: string) {
     },
     [readReceipts]
   );
+
+  // Add this after the existing useEffect for listening:
+  useEffect(() => {
+    const loadInitialReadReceipts = async () => {
+      try {
+        const response = await apiClient.get(`/chat/rooms/${roomId}/read-receipts`);
+        const data = response.data as Record<string, string[]>;
+
+        setReadReceipts((prev) => {
+          const next = new Map(prev);
+          for (const [messageId, userIds] of Object.entries(data)) {
+            const readers = next.get(messageId) || new Set();
+            userIds.forEach((uid) => readers.add(uid));
+            next.set(messageId, readers);
+          }
+          return next;
+        });
+      } catch {
+        // Silently fail — read receipts are non-critical
+      }
+    };
+
+    loadInitialReadReceipts();
+  }, [roomId]);
 
   return {
     getReadBy,

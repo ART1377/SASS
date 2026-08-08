@@ -3,14 +3,14 @@
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { useMutationWithToast } from '@/shared/hooks/use-mutation-with-toast';
 import { queryKeys } from '@/shared/lib/query-keys';
-import { useSocket } from '@/shared/providers/socket-provider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { chatApi } from '../api/chat-api';
 import type { ChatMessage, ChatRoom, ReplyInfo, RoomUpdatedPayload } from '../types';
 import { useChatAPI } from './use-chat-api';
-import { useChatSocket } from './use-chat-socket';
+import { useChatPusher } from './use-chat-pusher';
 import { useForwardMessage } from './use-forward-message';
 import { useReadReceipts } from './use-read-receipts';
 
@@ -23,71 +23,72 @@ function createClientId() {
 export function useChat(roomId: string) {
   const { user } = useAuth();
   const api = useChatAPI(roomId);
-  const socket = useChatSocket(roomId);
+  const pusher = useChatPusher(roomId);
   const { forwardMessage } = useForwardMessage();
-
-  const [pending, setPending] = useState<Map<string, ChatMessage>>(new Map());
-  const registeredRef = useRef(false);
   const readReceipts = useReadReceipts(roomId);
 
-  useEffect(() => {
-    if (socket.isConnected && user?.id && !registeredRef.current) {
-      socket.registerUser({
-        id: user.id as string,
-        name: user.name || '',
-        image: user.image || null,
-      });
-      registeredRef.current = true;
-    }
-    if (!socket.isConnected) registeredRef.current = false;
-  }, [socket.isConnected, user, socket]);
+  const [pending, setPending] = useState<Map<string, ChatMessage>>(new Map());
 
   // Remove pending messages when confirmed broadcast arrives
   useEffect(() => {
-    if (socket.liveMessages.length === 0 || pending.size === 0) return;
+    if (pusher.liveMessages.length === 0 || pending.size === 0) return;
+
     setPending((prev) => {
       let changed = false;
       const next = new Map(prev);
-      for (const msg of socket.liveMessages) {
+
+      for (const msg of pusher.liveMessages) {
         if (msg.clientId && next.has(msg.clientId)) {
           next.delete(msg.clientId);
           changed = true;
+          continue;
+        }
+
+        for (const [key, pendingMsg] of next) {
+          if (
+            pendingMsg.content === msg.content &&
+            pendingMsg.senderId === msg.senderId &&
+            Math.abs(new Date(pendingMsg.createdAt).getTime() - new Date(msg.createdAt).getTime()) <
+              10000
+          ) {
+            next.delete(key);
+            changed = true;
+            break;
+          }
         }
       }
+
       return changed ? next : prev;
     });
-  }, [socket.liveMessages, pending.size]);
+  }, [pusher.liveMessages, pending.size]);
 
-  // Merge: API history + live socket messages + pending optimistic - deleted
+  // Merge: API history + live pusher messages + pending optimistic - deleted
   const messages = useMemo(() => {
     const historyIds = new Set(api.messages.map((m) => m.id));
-    const live = socket.liveMessages.filter(
-      (m) => !historyIds.has(m.id) && !socket.deletedMessageIds.has(m.id)
+    const live = pusher.liveMessages.filter(
+      (m) => !historyIds.has(m.id) && !pusher.deletedMessageIds.has(m.id)
     );
     const merged = [...api.messages, ...live]
-      .filter((m) => !socket.deletedMessageIds.has(m.id))
+      .filter((m) => !pusher.deletedMessageIds.has(m.id))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return [...merged, ...pending.values()];
-  }, [api.messages, socket.liveMessages, socket.deletedMessageIds, pending]);
+  }, [api.messages, pusher.liveMessages, pusher.deletedMessageIds, pending]);
 
   const othersTyping = useMemo(
-    () => socket.typingUsers.filter((u) => u.userId !== user?.id),
-    [socket.typingUsers, user?.id]
+    () => pusher.typingUsers.filter((u) => u.userId !== user?.id),
+    [pusher.typingUsers, user?.id]
   );
 
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    // Get all messages from others that aren't pending/failed
-    const unreadMessages = messages.filter(
-      (m) => m.senderId !== user?.id && m.status !== 'sending' && m.status !== 'failed'
-    );
-
-    if (unreadMessages.length > 0) {
-      const messageIds = unreadMessages.map((m) => m.id);
-      readReceipts.markAsRead(messageIds);
-    }
-  }, [messages, user?.id, readReceipts]);
+  // NOTE: read-receipt marking is intentionally NOT done here as a blanket
+  // "mark everything as read" effect anymore — that only ran once per room
+  // (both because of a permanently-flipped ref guard AND a dependency on
+  // `messages.length > 0`, a boolean that stops changing after the first
+  // message, so it never re-fired for messages that arrived later over
+  // Pusher). Real read-tracking now happens via `readReceipts.registerMessageElement`,
+  // wired to each message bubble's DOM node in ChatMessages/MessageBubble —
+  // a message is marked read only once it's actually scrolled into view,
+  // which also means it keeps working for messages that arrive live while
+  // the room is already open, without needing a reload.
 
   const sendMessage = async (content: string, replyTo?: ReplyInfo) => {
     const trimmed = content.trim();
@@ -109,33 +110,38 @@ export function useChat(roomId: string) {
 
     setPending((prev) => new Map(prev).set(clientId, optimisticMessage));
 
-    try {
-      await socket.send({
-        content: trimmed,
-        sender: { id: user.id as string, name: user.name || '', image: user.image || null },
-        replyTo,
-        clientId,
+    chatApi
+      .sendMessage(roomId, trimmed, replyTo?.id)
+      .then(() => {
+        setPending((prev) => {
+          const next = new Map(prev);
+          next.delete(clientId);
+          return next;
+        });
+      })
+      .catch(() => {
+        setPending((prev) => {
+          const next = new Map(prev);
+          const failed = next.get(clientId);
+          if (failed) next.set(clientId, { ...failed, status: 'failed' });
+          return next;
+        });
       });
-    } catch {
-      setPending((prev) => {
-        const next = new Map(prev);
-        const failed = next.get(clientId);
-        if (failed) next.set(clientId, { ...failed, status: 'failed' });
-        return next;
-      });
-    }
   };
 
   const retryMessage = (clientId: string) => {
     const failed = pending.get(clientId);
     if (!failed || !user) return;
     setPending((prev) => new Map(prev).set(clientId, { ...failed, status: 'sending' }));
-    socket
-      .send({
-        content: failed.content,
-        sender: { id: user.id as string, name: user.name || '', image: user.image || null },
-        replyTo: failed.replyTo ?? undefined,
-        clientId,
+
+    chatApi
+      .sendMessage(roomId, failed.content, failed.replyToId ?? undefined)
+      .then(() => {
+        setPending((prev) => {
+          const next = new Map(prev);
+          next.delete(clientId);
+          return next;
+        });
       })
       .catch(() => {
         setPending((prev) => {
@@ -147,64 +153,42 @@ export function useChat(roomId: string) {
       });
   };
 
-  // ── Single delete with toast (uses socket for real-time broadcast) ──
   const deleteMessageWithToast = useCallback(
     async (messageId: string) => {
       try {
-        await socket.deleteMessage(messageId);
+        await chatApi.deleteMessage(roomId, messageId);
         toast.success('پیام حذف شد');
       } catch {
-        // Fallback to REST if socket fails
-        try {
-          await api.deleteMessageAsync(messageId);
-          toast.success('پیام حذف شد');
-        } catch {
-          toast.error('خطا در حذف پیام');
-        }
+        toast.error('خطا در حذف پیام');
       }
     },
-    [socket, api]
+    [roomId]
   );
 
-  // ── Update message with toast (uses socket for real-time broadcast) ──
   const updateMessageWithToast = useCallback(
     async (messageId: string, content: string) => {
       try {
-        await socket.updateMessage(messageId, content);
+        await chatApi.updateMessage(roomId, messageId, content);
         toast.success('پیام ویرایش شد');
       } catch {
-        // Fallback to REST if socket fails
-        try {
-          await api.updateMessage(messageId, content);
-          toast.success('پیام ویرایش شد');
-        } catch {
-          toast.error('خطا در ویرایش پیام');
-        }
+        toast.error('خطا در ویرایش پیام');
       }
     },
-    [socket, api]
+    [roomId]
   );
 
-  // ── Bulk delete with toast ──
   const bulkDeleteMessagesWithToast = useCallback(
     async (messageIds: string[]) => {
       try {
-        await Promise.all(messageIds.map((id) => socket.deleteMessage(id)));
+        await Promise.all(messageIds.map((id) => chatApi.deleteMessage(roomId, id)));
         toast.success(`${messageIds.length} پیام حذف شد`);
       } catch {
-        // Fallback to REST
-        try {
-          await Promise.all(messageIds.map((id) => api.deleteMessageAsync(id)));
-          toast.success(`${messageIds.length} پیام حذف شد`);
-        } catch {
-          toast.error('خطا در حذف پیام‌ها');
-        }
+        toast.error('خطا در حذف پیام‌ها');
       }
     },
-    [socket, api]
+    [roomId]
   );
 
-  // ── Forward messages with toast ──
   const forwardMessagesWithToast = useCallback(
     async (targetRoomId: string, messagesToForward: ChatMessage[]) => {
       try {
@@ -219,7 +203,6 @@ export function useChat(roomId: string) {
     [forwardMessage]
   );
 
-  // ── Copy message with toast ──
   const copyMessageWithToast = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
@@ -237,11 +220,15 @@ export function useChat(roomId: string) {
     retryMessage,
     isSending: false,
     typingUsers: othersTyping,
-    startTyping: socket.startTyping,
-    stopTyping: socket.stopTyping,
+    startTyping: () =>
+      pusher.triggerClientEvent('typing:user_started', {
+        userId: user?.id,
+        userName: user?.name,
+      }),
+    stopTyping: () => pusher.triggerClientEvent('typing:user_stopped', { userId: user?.id }),
     currentUser: user,
     refetch: api.refetch,
-    onlineCount: socket.onlineCount,
+    onlineCount: pusher.onlineCount,
     deleteMessage: api.deleteMessage,
     deleteMessageAsync: api.deleteMessageAsync,
     deleteMessageWithToast,
@@ -258,9 +245,8 @@ export function useChat(roomId: string) {
   };
 }
 
-// ─── Chat Rooms Hook (with live updates) ────────
 export function useChatRooms(projectId?: string, activeRoomId?: string) {
-  const { socket, isConnected } = useSocket();
+  const { data: session } = useSession();
   const queryClient = useQueryClient();
   const queryKey = queryKeys.chat.rooms(projectId || 'all');
 
@@ -271,21 +257,26 @@ export function useChatRooms(projectId?: string, activeRoomId?: string) {
   });
 
   useEffect(() => {
-    if (!socket || !isConnected) return;
+    const pusher = (window as any).__pusherInstance;
+    if (!pusher || !session?.user?.id) return;
 
-    const onRoomUpdated = ({ roomId, lastMessage, isSender }: RoomUpdatedPayload) => {
+    const personalChannel = pusher.subscribe(`private-user-${session.user.id}`);
+
+    const onRoomUpdated = (data: RoomUpdatedPayload) => {
       queryClient.setQueryData<ChatRoom[]>(queryKey, (prev) => {
         if (!prev) return prev;
-        const isActive = roomId === activeRoomId;
+        const isActive = data.roomId === activeRoomId;
         return prev
           .map((room) =>
-            room.id === roomId
+            room.id === data.roomId
               ? {
                   ...room,
-                  lastMessage,
-                  updatedAt: lastMessage.createdAt,
+                  lastMessage: data.lastMessage,
+                  updatedAt: data.lastMessage.createdAt,
                   unreadCount:
-                    isSender || isActive ? (room.unreadCount ?? 0) : (room.unreadCount ?? 0) + 1,
+                    data.isSender || isActive
+                      ? (room.unreadCount ?? 0)
+                      : (room.unreadCount ?? 0) + 1,
                 }
               : room
           )
@@ -293,13 +284,14 @@ export function useChatRooms(projectId?: string, activeRoomId?: string) {
       });
     };
 
-    socket.on('room:updated', onRoomUpdated);
-    return () => {
-      socket.off('room:updated', onRoomUpdated);
-    };
-  }, [socket, isConnected, queryClient, queryKey, activeRoomId]);
+    personalChannel.bind('room:updated', onRoomUpdated);
 
-  // Reset unread count for the active room
+    return () => {
+      personalChannel.unbind('room:updated', onRoomUpdated);
+      pusher.unsubscribe(`private-user-${session.user.id}`);
+    };
+  }, [session?.user?.id, queryClient, queryKey, activeRoomId]);
+
   useEffect(() => {
     if (!activeRoomId) return;
 
@@ -312,7 +304,6 @@ export function useChatRooms(projectId?: string, activeRoomId?: string) {
   return query;
 }
 
-// ─── Create Chat Room Hook ──────────────────────
 export function useCreateChatRoom() {
   return useMutationWithToast({
     mutationFn: ({ projectId, name }: { projectId: string; name: string }) =>

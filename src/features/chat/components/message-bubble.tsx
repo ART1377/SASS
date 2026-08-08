@@ -22,6 +22,9 @@ interface MessageBubbleProps {
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
   readBy?: string[];
+  /** Registers this message's DOM node so it's marked read once actually
+   * scrolled into view. Only meaningful for messages from OTHER users. */
+  registerMessageElement?: (messageId: string, el: HTMLElement | null) => void;
 }
 
 export function MessageBubble({
@@ -40,6 +43,7 @@ export function MessageBubble({
   onLongPress,
   onCopy,
   readBy,
+  registerMessageElement,
 }: MessageBubbleProps) {
   const isPending = message.status === 'sending' || message.status === 'failed';
   const isSent = !isPending && !message.status;
@@ -54,7 +58,12 @@ export function MessageBubble({
       <motion.div
         role="article"
         aria-label={`پیام از ${message.sender.name}`}
-        ref={(el) => onSetRef(message.id, el)}
+        ref={(el) => {
+          onSetRef(message.id, el);
+          // Only other people's messages need read-tracking — you don't
+          // mark your own message as "read by yourself".
+          if (!isOwn) registerMessageElement?.(message.id, el);
+        }}
         layout
         initial={{ opacity: 0, y: 10, scale: 0.95 }}
         animate={{ opacity: message.status === 'sending' ? 0.6 : 1, y: 0, scale: 1 }}
@@ -76,7 +85,6 @@ export function MessageBubble({
           isSelected && 'ring-primary ring-2'
         )}
       >
-        {/* Selection checkbox */}
         {selectMode && (
           <div
             className={cn(
@@ -105,7 +113,6 @@ export function MessageBubble({
           </div>
         )}
 
-        {/* Forwarded indicator */}
         {message.forwardedFromName && (
           <p
             className={cn(
@@ -118,7 +125,6 @@ export function MessageBubble({
           </p>
         )}
 
-        {/* Reply preview */}
         {message.replyTo && (
           <button
             onClick={(e) => {
@@ -137,7 +143,6 @@ export function MessageBubble({
           </button>
         )}
 
-        {/* Edited indicator */}
         {message.editedAt && (
           <span
             className={cn(
@@ -149,12 +154,10 @@ export function MessageBubble({
           </span>
         )}
 
-        {/* Message content */}
         <p className="text-[13px] leading-relaxed wrap-break-word whitespace-pre-wrap">
           {message.content}
         </p>
 
-        {/* Time + Status Row */}
         <div className="mt-1 flex items-center justify-end gap-1">
           <span
             className={cn(
@@ -165,23 +168,18 @@ export function MessageBubble({
             {timeString}
           </span>
 
-          {/* Telegram-style status icons (only for own messages) */}
           {isOwn && (
             <span className="ml-0.5 shrink-0">
-              {/* Sending (clock) — message hasn't been sent yet */}
               {message.status === 'sending' && (
                 <span className="border-primary-foreground/40 inline-block h-3 w-3 animate-pulse rounded-full border" />
               )}
 
-              {/* Failed — show error indicator */}
               {message.status === 'failed' && <span className="text-[10px] text-red-400">⚠</span>}
 
-              {/* Sent but not seen — single check */}
               {isSent && (!readBy || readBy.length === 0) && (
                 <Check className="text-primary-foreground/50 h-3.5 w-3.5" strokeWidth={2.5} />
               )}
 
-              {/* Seen — double check (turns blue/white when read) */}
               {isSent && readBy && readBy.length > 0 && (
                 <CheckCheck className="h-3.5 w-3.5 text-white/70" strokeWidth={2.5} />
               )}
@@ -189,7 +187,6 @@ export function MessageBubble({
           )}
         </div>
 
-        {/* Message Footer (actions) */}
         <MessageFooter
           message={message}
           isOwn={isOwn}

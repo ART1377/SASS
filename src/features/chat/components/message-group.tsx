@@ -22,6 +22,7 @@ interface MessageGroupProps {
   onLongPress?: (id: string) => void;
   onCopy?: (content: string) => void;
   getReadBy?: (messageId: string, excludeUserId?: string) => string[];
+  registerMessageElement?: (messageId: string, el: HTMLElement | null) => void;
 }
 
 export function MessageGroupBubble({
@@ -40,6 +41,7 @@ export function MessageGroupBubble({
   onLongPress,
   onCopy,
   getReadBy,
+  registerMessageElement,
 }: MessageGroupProps) {
   return (
     <motion.div
@@ -82,6 +84,7 @@ export function MessageGroupBubble({
             onLongPress={onLongPress}
             onCopy={onCopy}
             readBy={getReadBy?.(msg.id, group.sender.id)}
+            registerMessageElement={registerMessageElement}
           />
         ))}
       </div>

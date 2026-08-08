@@ -35,15 +35,16 @@ export const chatApi = {
     return response.data;
   },
 
-  /** Send a message via REST (used for forwarding and fallback). */
   sendMessage: async (
     roomId: string,
     content: string,
-    replyToId?: string
+    replyToId?: string,
+    forwardedFromName?: string
   ): Promise<ChatMessage> => {
     const response = await apiClient.post<ChatMessage>(`/chat/rooms/${roomId}/messages`, {
       content,
       replyToId: replyToId || undefined,
+      forwardedFromName: forwardedFromName || undefined,
     });
     return response.data;
   },

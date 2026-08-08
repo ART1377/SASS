@@ -1,5 +1,6 @@
 import { auth } from '@/features/auth/auth-config';
 import { prisma } from '@/shared/lib/prisma';
+import { pusherServer } from '@/shared/lib/pusher-server';
 import { NextResponse } from 'next/server';
 
 const MAX_MESSAGE_LENGTH = 1000;
@@ -75,7 +76,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { content, replyToId } = await request.json();
+    const { content, replyToId, forwardedFromName, clientId } = await request.json();
     const trimmed = typeof content === 'string' ? content.trim() : '';
 
     if (!trimmed) {
@@ -98,6 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
         senderId: session.user.id,
         content: trimmed,
         replyToId: replyToId || null,
+        forwardedFromName: forwardedFromName || null, // ← ADD THIS
       },
       include: messageInclude,
     });
@@ -106,6 +108,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ roo
       where: { id: roomId },
       data: { updatedAt: new Date() },
     });
+
+    // Broadcast message to the room
+    await pusherServer.trigger(`presence-room-${roomId}`, 'message:new', message);
+
+    // Notify each member on their private channel for room list update
+    const members = await prisma.chatRoomMember.findMany({
+      where: { roomId },
+      select: { userId: true },
+    });
+
+    for (const member of members) {
+      await pusherServer.trigger(`private-user-${member.userId}`, 'room:updated', {
+        roomId,
+        lastMessage: message,
+        isSender: member.userId === session.user.id,
+      });
+    }
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

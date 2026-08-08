@@ -3,7 +3,6 @@ import { TooltipProvider } from '@/shared/components/ui/tooltip';
 import { AuthProvider } from '@/shared/providers/auth-provider';
 import { PresenceProvider } from '@/shared/providers/presence-provider';
 import { QueryProvider } from '@/shared/providers/query-provider';
-import { SocketProvider } from '@/shared/providers/socket-provider';
 import { ThemeProvider } from '@/shared/providers/theme-provider';
 import type { Metadata } from 'next';
 import { Vazirmatn } from 'next/font/google';
@@ -41,11 +40,9 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              <SocketProvider>
-                <PresenceProvider>
-                  <TooltipProvider>{children}</TooltipProvider>
-                </PresenceProvider>
-              </SocketProvider>
+              <PresenceProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+              </PresenceProvider>
               <ToastConfig />
             </AuthProvider>
           </QueryProvider>
