@@ -27,17 +27,18 @@ export const authConfig: NextAuthConfig = {
           throw new Error('ایمیل و رمز عبور الزامی است');
         }
 
+        const email = credentials.email as string;
+        const password = credentials.password as string;
+
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email as string,
-          },
+          where: { email },
         });
 
         if (!user) {
           throw new Error('کاربری با این ایمیل یافت نشد');
         }
 
-        const isPasswordValid = await compare(credentials.password as string, user.password);
+        const isPasswordValid = await compare(password, user.password);
 
         if (!isPasswordValid) {
           throw new Error('رمز عبور اشتباه است');

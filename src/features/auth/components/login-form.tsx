@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../hooks/use-auth';
 import { loginSchema, type LoginFormData } from '../validations';
+import { DemoLoginSection } from './demo-login-section';
 
 export function LoginForm() {
   const { login, isLoggingIn } = useAuth();
@@ -33,6 +34,10 @@ export function LoginForm() {
   function onSubmit(data: LoginFormData) {
     login(data);
   }
+
+  const handleDemoLogin = () => {
+    login({ email: 'admin@gmail.com', password: 'Admin123' });
+  };
 
   return (
     <Form {...form}>
@@ -93,6 +98,19 @@ export function LoginForm() {
           label="ورود به حساب"
           className="shadow-primary/20 hover:shadow-primary/30 h-11 w-full rounded-xl font-medium shadow-lg transition-all duration-300 hover:shadow-xl"
         />
+
+        {/* Separator */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card text-muted-foreground px-2">دسترسی سریع</span>
+          </div>
+        </div>
+
+        {/* Demo Section */}
+        <DemoLoginSection onDemoLogin={handleDemoLogin} isLoading={isLoggingIn} />
 
         <p className="text-muted-foreground text-center text-sm">
           حساب کاربری ندارید؟{' '}
